@@ -1,8 +1,10 @@
-import os
 import argparse
+import os
 import traceback
+
 import pandas as pd
 from pandas.core.frame import DataFrame as PandasDF
+
 
 def get_query_answer(query: int, base_dir: str) -> PandasDF:
     answer_df = pd.read_csv(
@@ -41,7 +43,10 @@ def test_results(q_num: int, answer_path: str, cur_result_path: str):
 def main():
     parser = argparse.ArgumentParser(description="test results.")
     parser.add_argument(
-        "--answer_path", type=str, required=True, help="path to the ground truth answer."
+        "--answer_path",
+        type=str,
+        required=True,
+        help="path to the ground truth answer.",
     )
     parser.add_argument(
         "--cur_result_path", type=str, required=True, help="path to the result."
@@ -66,6 +71,7 @@ def main():
             test_results(query, args.answer_path, args.cur_result_path)
         except Exception as e:
             print(f"q{query} is wrong or missing!")
+
 
 if __name__ == "__main__":
     main()

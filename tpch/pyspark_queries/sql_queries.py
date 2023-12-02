@@ -1,11 +1,11 @@
+import argparse
 import os
 import time
-import argparse
 import traceback
-import pyspark
-from pyspark.sql import SparkSession
 
+import pyspark
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
+from pyspark.sql import SparkSession
 
 dataset_dict = {}
 spark: SparkSession = None
@@ -232,7 +232,7 @@ def q03(root: str):
 def q04(root: str):
     line_item = load_lineitem(root)
     orders = load_orders(root)
-    
+
     DATE = "1993-08-01"
     total = spark.sql(
         f"""SELECT
@@ -324,7 +324,7 @@ def q07(root: str):
     supplier = load_supplier(root)
     lineitem = load_lineitem(root)
     customer = load_customer(root)
-    
+
     NATION1 = "FRANCE"
     NATION2 = "GERMANY"
     total = spark.sql(
@@ -377,12 +377,12 @@ def q08(root: str):
     supplier = load_supplier(root)
     lineitem = load_lineitem(root)
     customer = load_customer(root)
-    
+
     NATION = "BRAZIL"
     REGION = "AMERICA"
     TYPE = "ECONOMY ANODIZED STEEL"
     total = spark.sql(
-        F"""SELECT
+        f"""SELECT
                 O_YEAR,
                 SUM(CASE
                     WHEN NAtion = '{NATION}'
@@ -513,12 +513,13 @@ def q10(root: str):
     )
     return total
 
+
 # todo: result is empty
 def q11(root: str):
     partsupp = load_partsupp(root)
     supplier = load_supplier(root)
     nation = load_nation(root)
-   
+
     NATION = "GERMANY"
     FRACTION = 0.0001
 
@@ -603,7 +604,7 @@ def q13(root: str):
     WORD1 = "special"
     WORD2 = "requests"
     total = spark.sql(
-        F"""SELECT
+        f"""SELECT
                 C_COUNT, COUNT(*) AS CUSTDIST
             FROM (
                 SELECT
@@ -628,7 +629,7 @@ def q13(root: str):
 def q14(root):
     lineitem = load_lineitem(root)
     part = load_part(root)
-    
+
     DATE = "1994-03-01"
     total = spark.sql(
         f"""SELECT
@@ -687,9 +688,7 @@ def q15(root):
             ORDER BY
                 S_SUPPKEY"""
     )
-    spark.sql(
-        "DROP VIEW REVENUE"
-    )
+    spark.sql("DROP VIEW REVENUE")
     return total
 
 
@@ -709,7 +708,7 @@ def q16(root):
     SIZE7 = 36
     SIZE8 = 9
     total = spark.sql(
-        F"""SELECT
+        f"""SELECT
                 P_BRAND,
                 P_TYPE,
                 P_SIZE,
@@ -982,7 +981,7 @@ def q22(root):
     I6 = 18
     I7 = 17
     total = spark.sql(
-        F"""SELECT
+        f"""SELECT
                 CNTRYCODE,
                 COUNT(*) AS NUMCUST,
                 SUM(C_ACCTBAL) AS TOTACCTBAL
@@ -1128,7 +1127,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("pyspark_sql", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "pyspark_sql",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -1140,10 +1145,22 @@ def main():
     # aws settings
     parser.add_argument("--account", type=str, help="AWS access id")
     parser.add_argument("--key", type=str, help="AWS secret access key")
-    parser.add_argument("--endpoint", type=str, help="AWS region endpoint related to your S3")
+    parser.add_argument(
+        "--endpoint", type=str, help="AWS region endpoint related to your S3"
+    )
 
-    parser.add_argument("--executor_cores", type=int, default=32, help='Number of cores for each Spark executor')
-    parser.add_argument("--executor_memory", type=str, default="64G", help='Memory size for each Spark executor')
+    parser.add_argument(
+        "--executor_cores",
+        type=int,
+        default=32,
+        help="Number of cores for each Spark executor",
+    )
+    parser.add_argument(
+        "--executor_memory",
+        type=str,
+        default="64G",
+        help="Memory size for each Spark executor",
+    )
     parser = parse_common_arguments(parser)
     args = parser.parse_args()
     path: str = args.path
@@ -1154,20 +1171,19 @@ def main():
         queries = args.queries
     print(f"Queries to run: {queries}")
     print(f"Include IO: {args.include_io}")
-    
 
     account = args.account
     key = args.key
 
-    spark = SparkSession\
-        .builder\
-        .appName("PySpark tpch query")\
-        .master(args.master) \
-        .config("spark.executor.cores", args.executor_cores) \
-        .config("spark.executor.memory", args.executor_memory) \
-        .config('spark.ui.showConsoleProgress', 'false') \
+    spark = (
+        SparkSession.builder.appName("PySpark tpch query")
+        .master(args.master)
+        .config("spark.executor.cores", args.executor_cores)
+        .config("spark.executor.memory", args.executor_memory)
+        .config("spark.ui.showConsoleProgress", "false")
         .getOrCreate()
-    
+    )
+
     spark.sparkContext.setLogLevel("ERROR")
 
     if "s3://" in path:
@@ -1177,13 +1193,11 @@ def main():
         conf.set("fs.s3a.endpoint", args.endpoint)
         path = path.replace("s3://", "s3a://")
         # if you are using Hadoop or S3 on a cloud, you should add the following config
-        spark.conf.set("spark.jars.packages",'org.apache.spark:spark-hadoop-cloud_2.12:3.5.0')
-    
-    run_queries(path, 
-                queries, 
-                args.log_time, 
-                args.print_result,
-                args.include_io)
+        spark.conf.set(
+            "spark.jars.packages", "org.apache.spark:spark-hadoop-cloud_2.12:3.5.0"
+        )
+
+    run_queries(path, queries, args.log_time, args.print_result, args.include_io)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
-import os
 import json
-
+import os
 from argparse import ArgumentParser
 
 import pandas as pd
@@ -9,13 +8,14 @@ SCALE_FACTOR = os.environ.get("SCALE_FACTOR", "1")
 
 CWD = os.path.dirname(os.path.realpath(__file__))
 
+
 def log_time_fn(
-    solution: str, 
-    q: str, 
+    solution: str,
+    q: str,
     version: str,
     without_io_time: float = 0.0,
     with_io_time: float = 0.0,
-    success=True
+    success=True,
 ):
     TIMINGS_FILE = f"time-{solution}.csv"
     with open(TIMINGS_FILE, "a") as f:
@@ -25,7 +25,7 @@ def log_time_fn(
             "query": q,
             "without_io_time": without_io_time,
             "with_io_time": with_io_time,
-            "is_success": success
+            "is_success": success,
         }
         json_metric = json.dumps(metric)
         f.write(json_metric + "\n")

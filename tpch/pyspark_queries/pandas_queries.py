@@ -1,15 +1,13 @@
+import argparse
 import os
 import time
-import argparse
 import traceback
 
 import pandas as pd
-
 import pyspark
 import pyspark.pandas as ps
-from pyspark.sql import SparkSession
-
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
+from pyspark.sql import SparkSession
 
 dataset_dict = {}
 spark: SparkSession = None
@@ -153,15 +151,17 @@ def q01(root: str):
     )
     total = (
         total.reset_index()
-            .sort_values(["L_RETURNFLAG", "L_LINESTATUS"])
-            .rename(columns={
+        .sort_values(["L_RETURNFLAG", "L_LINESTATUS"])
+        .rename(
+            columns={
                 "L_QUANTITY": "SUM_QTY",
                 "L_EXTENDEDPRICE": "SUM_BASE_PRICE",
                 "DISC_PRICE": "SUM_DISC_PRICE",
                 "CHARGE": "SUM_CHARGE",
                 "L_DISCOUNT": "AVG_DISC",
-                "L_ORDERKEY": "COUNT_ORDER"
-            })
+                "L_ORDERKEY": "COUNT_ORDER",
+            }
+        )
     )
 
     return total
@@ -291,7 +291,9 @@ def q03(root: str):
     lineitem_filtered = lineitem.loc[
         :, ["L_ORDERKEY", "L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE"]
     ]
-    orders_filtered = orders.loc[:, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]]
+    orders_filtered = orders.loc[
+        :, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]
+    ]
     customer_filtered = customer.loc[:, ["C_MKTSEGMENT", "C_CUSTKEY"]]
     lsel = lineitem_filtered.L_SHIPDATE > date
     osel = orders_filtered.O_ORDERDATE < date
@@ -303,7 +305,9 @@ def q03(root: str):
     jn2 = jn1.merge(flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY")
     jn2["REVENUE"] = jn2.L_EXTENDEDPRICE * (1 - jn2.L_DISCOUNT)
     total = (
-        jn2.groupby(["L_ORDERKEY", "O_ORDERDATE", "O_SHIPPRIORITY"], as_index=False)["REVENUE"]
+        jn2.groupby(["L_ORDERKEY", "O_ORDERDATE", "O_SHIPPRIORITY"], as_index=False)[
+            "REVENUE"
+        ]
         .sum()
         .sort_values(["REVENUE"], ascending=False)
     )
@@ -328,8 +332,9 @@ def q04(root: str):
     # pandas API on Spark does not support isin
     # jn = forders[forders["O_ORDERKEY"].isin(flineitem["L_ORDERKEY"])]
     forders = forders[["O_ORDERKEY", "O_ORDERPRIORITY"]]
-    jn = forders.merge(flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY") \
-            .drop_duplicates(subset=["O_ORDERKEY"])[["O_ORDERPRIORITY", "O_ORDERKEY"]]
+    jn = forders.merge(
+        flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY"
+    ).drop_duplicates(subset=["O_ORDERKEY"])[["O_ORDERPRIORITY", "O_ORDERKEY"]]
     total = (
         jn.groupby("O_ORDERPRIORITY", as_index=False)["O_ORDERKEY"]
         .count()
@@ -477,7 +482,7 @@ def q07(root: str):
 
     # concat results
     total = ps.concat([total1, total2])
-    
+
     # pandas API on spark does not support groupby.agg(COL=pd.NamedAgg)
     # total = (
     #     total.groupby(["SUPP_NATION", "CUST_NATION", "L_YEAR"], as_index=False)
@@ -487,12 +492,13 @@ def q07(root: str):
     #             ascending=[True, True, True]
     #         )
     # )
-    total = total.groupby(["SUPP_NATION", "CUST_NATION", "L_YEAR"], as_index=False)["VOLUME"].sum()
+    total = total.groupby(["SUPP_NATION", "CUST_NATION", "L_YEAR"], as_index=False)[
+        "VOLUME"
+    ].sum()
     total.columns = ["SUPP_NATION", "CUST_NATION", "L_YEAR", "REVENUE"]
     total = total.sort_values(
-                by=["SUPP_NATION", "CUST_NATION", "L_YEAR"],
-                ascending=[True, True, True]
-            )
+        by=["SUPP_NATION", "CUST_NATION", "L_YEAR"], ascending=[True, True, True]
+    )
 
     return total
 
@@ -512,7 +518,9 @@ def q08(root):
     part_filtered = part[(part["P_TYPE"] == p_type)]
     part_filtered = part_filtered.loc[:, ["P_PARTKEY"]]
     lineitem_filtered = lineitem.loc[:, ["L_PARTKEY", "L_SUPPKEY", "L_ORDERKEY"]]
-    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (1.0 - lineitem["L_DISCOUNT"])
+    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (
+        1.0 - lineitem["L_DISCOUNT"]
+    )
     total = part_filtered.merge(
         lineitem_filtered, left_on="P_PARTKEY", right_on="L_PARTKEY", how="inner"
     )
@@ -538,8 +546,9 @@ def q08(root):
     )
     total = total.loc[:, ["VOLUME", "S_NATIONKEY", "O_YEAR", "C_NATIONKEY"]]
     n1_filtered = nation.loc[:, ["N_NATIONKEY", "N_REGIONKEY"]]
-    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]] \
-        .rename(columns={"N_NAME": "NATION"})
+    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]].rename(
+        columns={"N_NAME": "NATION"}
+    )
     total = total.merge(
         n1_filtered, left_on="C_NATIONKEY", right_on="N_NATIONKEY", how="inner"
     )
@@ -702,7 +711,7 @@ def q12(root):
 
     # def g2(x):
     #     return ((x != "1-URGENT") & (x != "2-HIGH")).sum()
-    
+
     # total = jn.groupby("L_SHIPMODE", as_index=False)["O_ORDERPRIORITY"] \
     #     .agg({"O_ORDERPRIORITY": [g1, g2]})
     # total = (
@@ -710,13 +719,19 @@ def q12(root):
     #     .rename(columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"})
     # )
 
-    jn['HIGH_LINE_COUNT'] = jn['O_ORDERPRIORITY'].isin(["1-URGENT", "2-HIGH"]).astype('long')
-    jn['LOW_LINE_COUNT'] = (~jn['O_ORDERPRIORITY'].isin(["1-URGENT", "2-HIGH"])).astype('long')
-    total = jn.groupby("L_SHIPMODE") \
-        .agg({"HIGH_LINE_COUNT": "sum", 'LOW_LINE_COUNT': 'sum'}) \
+    jn["HIGH_LINE_COUNT"] = (
+        jn["O_ORDERPRIORITY"].isin(["1-URGENT", "2-HIGH"]).astype("long")
+    )
+    jn["LOW_LINE_COUNT"] = (~jn["O_ORDERPRIORITY"].isin(["1-URGENT", "2-HIGH"])).astype(
+        "long"
+    )
+    total = (
+        jn.groupby("L_SHIPMODE")
+        .agg({"HIGH_LINE_COUNT": "sum", "LOW_LINE_COUNT": "sum"})
         .reset_index()
+    )
     total = total.sort_values("L_SHIPMODE")
-    
+
     return total
 
 
@@ -759,13 +774,16 @@ def q14(root: str):
     lineitem_filtered = lineitem.loc[
         :, ["L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE", "L_PARTKEY"]
     ]
-    sel = (lineitem_filtered.L_SHIPDATE >= startDate) \
-        & (lineitem_filtered.L_SHIPDATE < endDate)
+    sel = (lineitem_filtered.L_SHIPDATE >= startDate) & (
+        lineitem_filtered.L_SHIPDATE < endDate
+    )
     flineitem = lineitem_filtered[sel]
     jn = flineitem.merge(part_filtered, left_on="L_PARTKEY", right_on="P_PARTKEY")
     jn["PROMO_REVENUE"] = jn.L_EXTENDEDPRICE * (1.0 - jn.L_DISCOUNT)
     total = (
-        jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum() * 100 / jn.PROMO_REVENUE.sum()
+        jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum()
+        * 100
+        / jn.PROMO_REVENUE.sum()
     )
 
     result_df = ps.DataFrame({"PROMO_REVENUE": [total]})
@@ -778,7 +796,10 @@ def q15(root: str):
 
     lineitem_filtered = lineitem[
         (lineitem["L_SHIPDATE"] >= pd.Timestamp("1996-01-01"))
-        & (lineitem["L_SHIPDATE"] < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3)))
+        & (
+            lineitem["L_SHIPDATE"]
+            < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3))
+        )
     ]
     lineitem_filtered["REVENUE_PARTS"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
         1.0 - lineitem_filtered["L_DISCOUNT"]
@@ -837,8 +858,9 @@ def q16(root: str):
     )
     total = total[total["S_SUPPKEY"].isna()]
     total = total.loc[:, ["P_BRAND", "P_TYPE", "P_SIZE", "PS_SUPPKEY"]]
-    total = total.groupby(["P_BRAND", "P_TYPE", "P_SIZE"], as_index=False)["PS_SUPPKEY"] \
-                .nunique()
+    total = total.groupby(["P_BRAND", "P_TYPE", "P_SIZE"], as_index=False)[
+        "PS_SUPPKEY"
+    ].nunique()
     total.columns = ["P_BRAND", "P_TYPE", "P_SIZE", "SUPPLIER_CNT"]
     total = total.sort_values(
         by=["SUPPLIER_CNT", "P_BRAND", "P_TYPE", "P_SIZE"],
@@ -1068,10 +1090,9 @@ def q21(root: str):
     )
 
     # Not Exists: Check the exists condition isn't still satisfied on the output.
-    lineitem_orderkeys = (
-        lineitem_filtered.groupby("L_ORDERKEY", as_index=False)["L_SUPPKEY"]
-        .nunique()
-    )
+    lineitem_orderkeys = lineitem_filtered.groupby("L_ORDERKEY", as_index=False)[
+        "L_SUPPKEY"
+    ].nunique()
     lineitem_orderkeys.columns = ["L_ORDERKEY", "nunique_col"]
     lineitem_orderkeys = lineitem_orderkeys[lineitem_orderkeys["nunique_col"] == 1]
     lineitem_orderkeys = lineitem_orderkeys.loc[:, ["L_ORDERKEY"]]
@@ -1254,7 +1275,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("pyspark_pandas", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "pyspark_pandas",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -1266,10 +1293,22 @@ def main():
     # aws settings
     parser.add_argument("--account", type=str, help="AWS access id")
     parser.add_argument("--key", type=str, help="AWS secret access key")
-    parser.add_argument("--endpoint", type=str, help="AWS region endpoint related to your S3")
+    parser.add_argument(
+        "--endpoint", type=str, help="AWS region endpoint related to your S3"
+    )
 
-    parser.add_argument("--executor_cores", type=int, default=32, help='Number of cores for each Spark executor')
-    parser.add_argument("--executor_memory", type=str, default="64G", help='Memory size for each Spark executor')
+    parser.add_argument(
+        "--executor_cores",
+        type=int,
+        default=32,
+        help="Number of cores for each Spark executor",
+    )
+    parser.add_argument(
+        "--executor_memory",
+        type=str,
+        default="64G",
+        help="Memory size for each Spark executor",
+    )
     parser = parse_common_arguments(parser)
     args = parser.parse_args()
     path: str = args.path
@@ -1284,16 +1323,15 @@ def main():
     account = args.account
     key = args.key
 
-    spark = SparkSession\
-        .builder\
-        .appName("PySpark tpch query")\
-        .master(args.master) \
-        .config("spark.executor.cores", args.executor_cores) \
-        .config("spark.executor.memory", args.executor_memory) \
-        .config('spark.ui.showConsoleProgress', 'false') \
+    spark = (
+        SparkSession.builder.appName("PySpark tpch query")
+        .master(args.master)
+        .config("spark.executor.cores", args.executor_cores)
+        .config("spark.executor.memory", args.executor_memory)
+        .config("spark.ui.showConsoleProgress", "false")
         .getOrCreate()
-    
-    
+    )
+
     spark.sparkContext.setLogLevel("ERROR")
 
     if "s3://" in path:
@@ -1303,13 +1341,11 @@ def main():
         conf.set("fs.s3a.endpoint", args.endpoint)
         path = path.replace("s3://", "s3a://")
         # if you are using Hadoop or S3 on a cloud, you should add the following config
-        spark.conf.set("spark.jars.packages",'org.apache.spark:spark-hadoop-cloud_2.12:3.5.0')
-    
-    run_queries(path, 
-                queries, 
-                args.log_time, 
-                args.print_result,
-                args.include_io)
+        spark.conf.set(
+            "spark.jars.packages", "org.apache.spark:spark-hadoop-cloud_2.12:3.5.0"
+        )
+
+    run_queries(path, queries, args.log_time, args.print_result, args.include_io)
 
 
 if __name__ == "__main__":

@@ -1,17 +1,15 @@
-import os
-import json
-import time
 import argparse
+import json
+import os
+import time
 import traceback
 from typing import Dict
 
-import pandas as pd
-
 import dask
 import dask.dataframe as dd
-from dask.distributed import Client, wait
-
+import pandas as pd
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
+from dask.distributed import Client, wait
 
 dataset_dict = {}
 
@@ -176,16 +174,18 @@ def q01(root: str, storage_options: Dict):
     )
     total = (
         total.compute()
-            .sort_values(["L_RETURNFLAG", "L_LINESTATUS"])
-            .reset_index()
-            .rename(columns={
+        .sort_values(["L_RETURNFLAG", "L_LINESTATUS"])
+        .reset_index()
+        .rename(
+            columns={
                 "L_QUANTITY": "SUM_QTY",
                 "L_EXTENDEDPRICE": "SUM_BASE_PRICE",
                 "DISC_PRICE": "SUM_DISC_PRICE",
                 "CHARGE": "SUM_CHARGE",
                 "L_DISCOUNT": "AVG_DISC",
-                "L_ORDERKEY": "COUNT_ORDER"
-            })
+                "L_ORDERKEY": "COUNT_ORDER",
+            }
+        )
     )
 
     return total
@@ -317,7 +317,9 @@ def q03(root: str, storage_options: Dict):
     lineitem_filtered = lineitem.loc[
         :, ["L_ORDERKEY", "L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE"]
     ]
-    orders_filtered = orders.loc[:, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]]
+    orders_filtered = orders.loc[
+        :, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]
+    ]
     customer_filtered = customer.loc[:, ["C_MKTSEGMENT", "C_CUSTKEY"]]
     lsel = lineitem_filtered.L_SHIPDATE > date
     osel = orders_filtered.O_ORDERDATE < date
@@ -357,8 +359,9 @@ def q04(root: str, storage_options: Dict):
     # so we must use a different approach than the pandas query
     # jn = forders[forders["O_ORDERKEY"].isin(flineitem["L_ORDERKEY"])]
     forders = forders[["O_ORDERKEY", "O_ORDERPRIORITY"]]
-    jn = forders.merge(flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY") \
-            .drop_duplicates(subset=["O_ORDERKEY"])[["O_ORDERPRIORITY", "O_ORDERKEY"]]
+    jn = forders.merge(
+        flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY"
+    ).drop_duplicates(subset=["O_ORDERKEY"])[["O_ORDERPRIORITY", "O_ORDERKEY"]]
     total = (
         jn.groupby("O_ORDERPRIORITY")["O_ORDERKEY"]
         .count()
@@ -537,7 +540,9 @@ def q08(root: str, storage_options: Dict):
     part_filtered = part[(part["P_TYPE"] == p_type)]
     part_filtered = part_filtered.loc[:, ["P_PARTKEY"]]
     lineitem_filtered = lineitem.loc[:, ["L_PARTKEY", "L_SUPPKEY", "L_ORDERKEY"]]
-    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (1.0 - lineitem["L_DISCOUNT"])
+    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (
+        1.0 - lineitem["L_DISCOUNT"]
+    )
     total = part_filtered.merge(
         lineitem_filtered, left_on="P_PARTKEY", right_on="L_PARTKEY", how="inner"
     )
@@ -563,8 +568,9 @@ def q08(root: str, storage_options: Dict):
     )
     total = total.loc[:, ["VOLUME", "S_NATIONKEY", "O_YEAR", "C_NATIONKEY"]]
     n1_filtered = nation.loc[:, ["N_NATIONKEY", "N_REGIONKEY"]]
-    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]] \
-        .rename(columns={"N_NAME": "NATION"})
+    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]].rename(
+        columns={"N_NAME": "NATION"}
+    )
     total = total.merge(
         n1_filtered, left_on="C_NATIONKEY", right_on="N_NATIONKEY", how="inner"
     )
@@ -588,11 +594,7 @@ def q08(root: str, storage_options: Dict):
 
     total = total.groupby("O_YEAR").apply(udf)
     total.columns = ["O_YEAR", "MKT_SHARE"]
-    total = (
-        total.compute()
-        .reset_index()
-        .sort_values(by=["O_YEAR"], ascending=[True])
-    )
+    total = total.compute().reset_index().sort_values(by=["O_YEAR"], ascending=[True])
     return total
 
 
@@ -702,7 +704,7 @@ def q11(root: str, storage_options: Dict):
     total = total.rename(columns={"TOTAL_COST": "VALUE"})
     total = total[total["VALUE"] > sum_val]
     total = total.compute().sort_values("VALUE", ascending=False)
-    
+
     return total
 
 
@@ -781,12 +783,17 @@ def q14(root: str, storage_options: Dict):
     lineitem_filtered = lineitem.loc[
         :, ["L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE", "L_PARTKEY"]
     ]
-    sel = (lineitem_filtered.L_SHIPDATE >= startDate) \
-        & (lineitem_filtered.L_SHIPDATE < endDate)
+    sel = (lineitem_filtered.L_SHIPDATE >= startDate) & (
+        lineitem_filtered.L_SHIPDATE < endDate
+    )
     flineitem = lineitem_filtered[sel]
     jn = flineitem.merge(part_filtered, left_on="L_PARTKEY", right_on="P_PARTKEY")
     jn["PROMO_REVENUE"] = jn.L_EXTENDEDPRICE * (1.0 - jn.L_DISCOUNT)
-    total = jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum() * 100 / jn.PROMO_REVENUE.sum()
+    total = (
+        jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum()
+        * 100
+        / jn.PROMO_REVENUE.sum()
+    )
     total = total.compute()
     result_df = pd.DataFrame({"PROMO_REVENUE": [total]})
     return result_df
@@ -798,7 +805,10 @@ def q15(root: str, storage_options: Dict):
 
     lineitem_filtered = lineitem[
         (lineitem["L_SHIPDATE"] >= pd.Timestamp("1996-01-01"))
-        & (lineitem["L_SHIPDATE"] < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3)))
+        & (
+            lineitem["L_SHIPDATE"]
+            < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3))
+        )
     ]
     lineitem_filtered["REVENUE_PARTS"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
         1.0 - lineitem_filtered["L_DISCOUNT"]
@@ -1107,9 +1117,7 @@ def q21(root: str, storage_options: Dict):
 
     # Not Exists: Check the exists condition isn't still satisfied on the output.
     lineitem_orderkeys = (
-        lineitem_filtered.groupby("L_ORDERKEY")["L_SUPPKEY"]
-        .nunique()
-        .reset_index()
+        lineitem_filtered.groupby("L_ORDERKEY")["L_SUPPKEY"].nunique().reset_index()
     )
     lineitem_orderkeys.columns = ["L_ORDERKEY", "nunique_col"]
     lineitem_orderkeys = lineitem_orderkeys[lineitem_orderkeys["nunique_col"] == 1]
@@ -1141,7 +1149,9 @@ def q21(root: str, storage_options: Dict):
     total = total.loc[:, ["S_NAME"]]
     total = total.groupby("S_NAME").size().reset_index()
     total.columns = ["S_NAME", "NUMWAIT"]
-    total = total.compute().sort_values(by=["NUMWAIT", "S_NAME"], ascending=[False, True])
+    total = total.compute().sort_values(
+        by=["NUMWAIT", "S_NAME"], ascending=[False, True]
+    )
     total = total.head(100)
 
     return total
@@ -1262,14 +1272,14 @@ query_to_runner = {
 
 
 def run_queries(
-        path, 
-        storage_options, 
-        client, 
-        queries,
-        log_time=True,
-        print_result=False,
-        include_io=False,
-    ):
+    path,
+    storage_options,
+    client,
+    queries,
+    log_time=True,
+    print_result=False,
+    include_io=False,
+):
     version = dask.__version__
 
     data_start_time = time.time()
@@ -1303,7 +1313,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("dask", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "dask",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -1319,7 +1335,7 @@ def main():
         "--endpoint",
         type=str,
         required=False,
-        help="the endpoint of existing Dask cluster."
+        help="the endpoint of existing Dask cluster.",
     )
     parser = parse_common_arguments(parser)
     args = parser.parse_args()
@@ -1342,16 +1358,13 @@ def main():
 
     if args.endpoint == "local" or args.endpoint is None:
         from dask.distributed import LocalCluster
+
         client = LocalCluster()
     elif args.endpoint:
         client = Client(args.endpoint)
-    
-    run_queries(args.path, 
-        storage_options, 
-        client, 
-        queries, 
-        args.log_time, 
-        args.print_result
+
+    run_queries(
+        args.path, storage_options, client, queries, args.log_time, args.print_result
     )
 
 

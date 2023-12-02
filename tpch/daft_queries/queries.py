@@ -1,19 +1,17 @@
+import argparse
+import datetime
+import json
 import os
 import sys
-import argparse
-import json
 import time
 import traceback
-import datetime
 from typing import Dict
 
-import pandas as pd
-
-import ray
 import daft
-from daft import DataFrame, col
-
+import pandas as pd
+import ray
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
+from daft import DataFrame, col
 
 dataset_dict = {}
 
@@ -151,7 +149,9 @@ def q02(root: str) -> DataFrame:
         .join(partsupp, left_on=col("S_SUPPKEY"), right_on=col("PS_SUPPKEY"))
     )
 
-    brass = part.where((col("P_SIZE") == size) & col("P_TYPE").str.endswith(p_type)).join(
+    brass = part.where(
+        (col("P_SIZE") == size) & col("P_TYPE").str.endswith(p_type)
+    ).join(
         europe,
         left_on=col("P_PARTKEY"),
         right_on=col("PS_PARTKEY"),
@@ -175,7 +175,10 @@ def q02(root: str) -> DataFrame:
             col("S_PHONE"),
             col("S_COMMENT"),
         )
-        .sort(by=["S_ACCTBAL", "N_NAME", "S_NAME", "P_PARTKEY"], desc=[True, False, False, False])
+        .sort(
+            by=["S_ACCTBAL", "N_NAME", "S_NAME", "P_PARTKEY"],
+            desc=[True, False, False, False],
+        )
         .limit(100)
     )
     return daft_df
@@ -188,7 +191,7 @@ def q03(root: str) -> DataFrame:
     customer = load_customer(root)
     orders = load_orders(root)
     lineitem = load_lineitem(root)
-    
+
     mktsegment = "HOUSEHOLD"
     date = datetime.date(1995, 3, 15)
 
@@ -222,11 +225,13 @@ def q04(root: str) -> DataFrame:
     date1 = datetime.date(1993, 8, 1)
     date2 = datetime.date(1993, 11, 1)
 
-    orders = orders.where(
-        (col("O_ORDERDATE") >= date1) & (col("O_ORDERDATE") < date2)
-    )
+    orders = orders.where((col("O_ORDERDATE") >= date1) & (col("O_ORDERDATE") < date2))
 
-    lineitems = lineitem.where(col("L_COMMITDATE") < col("L_RECEIPTDATE")).select(col("L_ORDERKEY")).distinct()
+    lineitems = (
+        lineitem.where(col("L_COMMITDATE") < col("L_RECEIPTDATE"))
+        .select(col("L_ORDERKEY"))
+        .distinct()
+    )
 
     daft_df = (
         lineitems.join(orders, left_on=col("L_ORDERKEY"), right_on=col("O_ORDERKEY"))
@@ -250,17 +255,31 @@ def q05(root: str) -> DataFrame:
     date2 = datetime.date(1997, 1, 1)
 
     orders = orders.where(
-        (col("O_ORDERDATE") >= datetime.date(1994, 1, 1)) & (col("O_ORDERDATE") < datetime.date(1995, 1, 1))
+        (col("O_ORDERDATE") >= datetime.date(1994, 1, 1))
+        & (col("O_ORDERDATE") < datetime.date(1995, 1, 1))
     )
     region = region.where(col("R_NAME") == region_name)
     daft_df = (
         region.join(nation, left_on=col("R_REGIONKEY"), right_on=col("N_REGIONKEY"))
         .join(supplier, left_on=col("N_NATIONKEY"), right_on=col("S_NATIONKEY"))
         .join(lineitem, left_on=col("S_SUPPKEY"), right_on=col("L_SUPPKEY"))
-        .select(col("N_NAME"), col("L_EXTENDEDPRICE"), col("L_DISCOUNT"), col("L_ORDERKEY"), col("N_NATIONKEY"))
+        .select(
+            col("N_NAME"),
+            col("L_EXTENDEDPRICE"),
+            col("L_DISCOUNT"),
+            col("L_ORDERKEY"),
+            col("N_NATIONKEY"),
+        )
         .join(orders, left_on=col("L_ORDERKEY"), right_on=col("O_ORDERKEY"))
-        .join(customer, left_on=[col("O_CUSTKEY"), col("N_NATIONKEY")], right_on=[col("C_CUSTKEY"), col("C_NATIONKEY")])
-        .select(col("N_NAME"), (col("L_EXTENDEDPRICE") * (1 - col("L_DISCOUNT"))).alias("value"))
+        .join(
+            customer,
+            left_on=[col("O_CUSTKEY"), col("N_NATIONKEY")],
+            right_on=[col("C_CUSTKEY"), col("C_NATIONKEY")],
+        )
+        .select(
+            col("N_NAME"),
+            (col("L_EXTENDEDPRICE") * (1 - col("L_DISCOUNT"))).alias("value"),
+        )
         .groupby(col("N_NAME"))
         .agg([(col("value").alias("revenue"), "sum")])
         .sort(col("revenue"), desc=True)
@@ -291,12 +310,13 @@ def q07(root: str) -> DataFrame:
 
     nation1 = "FRANCE"
     nation2 = "GERMANY"
-    
+
     def decrease(x, y):
         return x * (1 - y)
 
     lineitem = linitem.where(
-        (col("L_SHIPDATE") >= datetime.date(1995, 1, 1)) & (col("L_SHIPDATE") <= datetime.date(1996, 12, 31))
+        (col("L_SHIPDATE") >= datetime.date(1995, 1, 1))
+        & (col("L_SHIPDATE") <= datetime.date(1996, 12, 31))
     )
     nation = nation.where((col("N_NAME") == nation1) | (col("N_NAME") == nation2))
 
@@ -346,13 +366,14 @@ def q08(root: str) -> DataFrame:
     nation_name = "BRAZIL"
     region_name = "AMERICA"
     p_type = "ECONOMY ANODIZED STEEL"
-    
+
     def decrease(x, y):
         return x * (1 - y)
 
     region = region.where(col("R_NAME") == region_name)
     orders = orders.where(
-        (col("O_ORDERDATE") < datetime.date(1997, 1, 1)) & (col("O_ORDERDATE") >= datetime.date(1995, 1, 1))
+        (col("O_ORDERDATE") < datetime.date(1997, 1, 1))
+        & (col("O_ORDERDATE") >= datetime.date(1995, 1, 1))
     )
     part = part.where(col("P_TYPE") == p_type)
 
@@ -380,10 +401,17 @@ def q08(root: str) -> DataFrame:
         .select(
             col("O_ORDERDATE").dt.year().alias("o_year"),
             col("volume"),
-            (col("N_NAME") == nation_name).if_else(col("volume"), 0.0).alias("case_volume"),
+            (col("N_NAME") == nation_name)
+            .if_else(col("volume"), 0.0)
+            .alias("case_volume"),
         )
         .groupby(col("o_year"))
-        .agg([(col("case_volume").alias("case_volume_sum"), "sum"), (col("volume").alias("volume_sum"), "sum")])
+        .agg(
+            [
+                (col("case_volume").alias("case_volume_sum"), "sum"),
+                (col("volume").alias("volume_sum"), "sum"),
+            ]
+        )
         .select(col("o_year"), col("case_volume_sum") / col("volume_sum"))
         .sort(col("o_year"))
     )
@@ -407,16 +435,27 @@ def q09(root: str) -> DataFrame:
     linepart = part.where(col("P_NAME").str.contains(p_name)).join(
         lineitem, left_on=col("P_PARTKEY"), right_on=col("L_PARTKEY")
     )
-    natsup = nation.join(supplier, left_on=col("N_NATIONKEY"), right_on=col("S_NATIONKEY"))
+    natsup = nation.join(
+        supplier, left_on=col("N_NATIONKEY"), right_on=col("S_NATIONKEY")
+    )
 
     daft_df = (
         linepart.join(natsup, left_on=col("L_SUPPKEY"), right_on=col("S_SUPPKEY"))
-        .join(partsupp, left_on=[col("L_SUPPKEY"), col("P_PARTKEY")], right_on=[col("PS_SUPPKEY"), col("PS_PARTKEY")])
+        .join(
+            partsupp,
+            left_on=[col("L_SUPPKEY"), col("P_PARTKEY")],
+            right_on=[col("PS_SUPPKEY"), col("PS_PARTKEY")],
+        )
         .join(orders, left_on=col("L_ORDERKEY"), right_on=col("O_ORDERKEY"))
         .select(
             col("N_NAME"),
             col("O_ORDERDATE").dt.year().alias("o_year"),
-            expr(col("L_EXTENDEDPRICE"), col("L_DISCOUNT"), col("PS_SUPPLYCOST"), col("L_QUANTITY")).alias("amount"),
+            expr(
+                col("L_EXTENDEDPRICE"),
+                col("L_DISCOUNT"),
+                col("PS_SUPPLYCOST"),
+                col("L_QUANTITY"),
+            ).alias("amount"),
         )
         .groupby(col("N_NAME"), col("o_year"))
         .agg([(col("amount"), "sum")])
@@ -431,16 +470,15 @@ def q10(root: str) -> DataFrame:
     orders = load_orders(root)
     nation = load_nation(root)
     customer = load_customer(root)
-    
+
     date1 = datetime.date(1994, 11, 1)
     date2 = datetime.date(1995, 2, 1)
+
     def decrease(x, y):
         return x * (1 - y)
 
     daft_df = (
-        orders.where(
-            (col("O_ORDERDATE") < date2) & (col("O_ORDERDATE") >= date1)
-        )
+        orders.where((col("O_ORDERDATE") < date2) & (col("O_ORDERDATE") >= date1))
         .join(customer, left_on=col("O_CUSTKEY"), right_on=col("C_CUSTKEY"))
         .join(nation, left_on=col("C_NATIONKEY"), right_on=col("N_NATIONKEY"))
         .join(lineitem, left_on=col("O_ORDERKEY"), right_on=col("L_ORDERKEY"))
@@ -568,7 +606,7 @@ def run_queries(
         for loader in loaders:
             loader(path)
     print(f"Total data loading time (s): {time.time() - data_start_time}")
-    
+
     total_start = time.time()
     for query in queries:
         try:
@@ -586,7 +624,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("daft", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "daft",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -616,14 +660,13 @@ def main():
 
     if "s3://" in args.path:
         import boto3
+
         s3_client = boto3.client(
-            's3', 
-            aws_access_key_id=args.account,
-            aws_secret_access_key=args.key
+            "s3", aws_access_key_id=args.account, aws_secret_access_key=args.key
         )
 
     ray.init(address="auto")
-    
+
     try:
         run_queries(
             args.path,

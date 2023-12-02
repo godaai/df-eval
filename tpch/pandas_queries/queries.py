@@ -1,7 +1,7 @@
-import os
-import json
-import time
 import argparse
+import json
+import os
+import time
 import traceback
 from typing import Dict
 
@@ -145,16 +145,15 @@ def q01(root: str, storage_options: Dict):
             "L_ORDERKEY": "count",
         }
     )
-    total = (
-        total.sort_values(["L_RETURNFLAG", "L_LINESTATUS"])
-            .rename(columns={
-                "L_QUANTITY": "SUM_QTY",
-                "L_EXTENDEDPRICE": "SUM_BASE_PRICE",
-                "DISC_PRICE": "SUM_DISC_PRICE",
-                "CHARGE": "SUM_CHARGE",
-                "L_DISCOUNT": "AVG_DISC",
-                "L_ORDERKEY": "COUNT_ORDER"
-            })
+    total = total.sort_values(["L_RETURNFLAG", "L_LINESTATUS"]).rename(
+        columns={
+            "L_QUANTITY": "SUM_QTY",
+            "L_EXTENDEDPRICE": "SUM_BASE_PRICE",
+            "DISC_PRICE": "SUM_DISC_PRICE",
+            "CHARGE": "SUM_CHARGE",
+            "L_DISCOUNT": "AVG_DISC",
+            "L_ORDERKEY": "COUNT_ORDER",
+        }
     )
 
     return total
@@ -285,7 +284,9 @@ def q03(root: str, storage_options: Dict):
     lineitem_filtered = lineitem.loc[
         :, ["L_ORDERKEY", "L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE"]
     ]
-    orders_filtered = orders.loc[:, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]]
+    orders_filtered = orders.loc[
+        :, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]
+    ]
     customer_filtered = customer.loc[:, ["C_MKTSEGMENT", "C_CUSTKEY"]]
     lsel = lineitem_filtered.L_SHIPDATE > date
     osel = orders_filtered.O_ORDERDATE < date
@@ -297,7 +298,9 @@ def q03(root: str, storage_options: Dict):
     jn2 = jn1.merge(flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY")
     jn2["REVENUE"] = jn2.L_EXTENDEDPRICE * (1 - jn2.L_DISCOUNT)
     total = (
-        jn2.groupby(["L_ORDERKEY", "O_ORDERDATE", "O_SHIPPRIORITY"], as_index=False)["REVENUE"]
+        jn2.groupby(["L_ORDERKEY", "O_ORDERDATE", "O_SHIPPRIORITY"], as_index=False)[
+            "REVENUE"
+        ]
         .sum()
         .sort_values(["REVENUE"], ascending=False)
     )
@@ -470,11 +473,10 @@ def q07(root: str, storage_options: Dict):
 
     total = (
         total.groupby(["SUPP_NATION", "CUST_NATION", "L_YEAR"], as_index=False)
-            .agg(REVENUE=pd.NamedAgg(column="VOLUME", aggfunc="sum"))
-            .sort_values(
-                by=["SUPP_NATION", "CUST_NATION", "L_YEAR"],
-                ascending=[True, True, True]
-            )
+        .agg(REVENUE=pd.NamedAgg(column="VOLUME", aggfunc="sum"))
+        .sort_values(
+            by=["SUPP_NATION", "CUST_NATION", "L_YEAR"], ascending=[True, True, True]
+        )
     )
 
     return total
@@ -495,7 +497,9 @@ def q08(root: str, storage_options: Dict):
     part_filtered = part[(part["P_TYPE"] == p_type)]
     part_filtered = part_filtered.loc[:, ["P_PARTKEY"]]
     lineitem_filtered = lineitem.loc[:, ["L_PARTKEY", "L_SUPPKEY", "L_ORDERKEY"]]
-    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (1.0 - lineitem["L_DISCOUNT"])
+    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (
+        1.0 - lineitem["L_DISCOUNT"]
+    )
     total = part_filtered.merge(
         lineitem_filtered, left_on="P_PARTKEY", right_on="L_PARTKEY", how="inner"
     )
@@ -521,8 +525,9 @@ def q08(root: str, storage_options: Dict):
     )
     total = total.loc[:, ["VOLUME", "S_NATIONKEY", "O_YEAR", "C_NATIONKEY"]]
     n1_filtered = nation.loc[:, ["N_NATIONKEY", "N_REGIONKEY"]]
-    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]] \
-        .rename(columns={"N_NAME": "NATION"})
+    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]].rename(
+        columns={"N_NAME": "NATION"}
+    )
     total = total.merge(
         n1_filtered, left_on="C_NATIONKEY", right_on="N_NATIONKEY", how="inner"
     )
@@ -686,9 +691,8 @@ def q12(root: str, storage_options: Dict):
         return ((x != "1-URGENT") & (x != "2-HIGH")).sum()
 
     total = jn.groupby("L_SHIPMODE", as_index=False)["O_ORDERPRIORITY"].agg((g1, g2))
-    total = (
-        total.sort_values("L_SHIPMODE")
-        .rename(columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"})
+    total = total.sort_values("L_SHIPMODE").rename(
+        columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"}
     )
     return total
 
@@ -732,12 +736,17 @@ def q14(root: str, storage_options: Dict):
     lineitem_filtered = lineitem.loc[
         :, ["L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE", "L_PARTKEY"]
     ]
-    sel = (lineitem_filtered.L_SHIPDATE >= startDate) \
-        & (lineitem_filtered.L_SHIPDATE < endDate)
+    sel = (lineitem_filtered.L_SHIPDATE >= startDate) & (
+        lineitem_filtered.L_SHIPDATE < endDate
+    )
     flineitem = lineitem_filtered[sel]
     jn = flineitem.merge(part_filtered, left_on="L_PARTKEY", right_on="P_PARTKEY")
     jn["PROMO_REVENUE"] = jn.L_EXTENDEDPRICE * (1.0 - jn.L_DISCOUNT)
-    total = jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum() * 100 / jn.PROMO_REVENUE.sum()
+    total = (
+        jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum()
+        * 100
+        / jn.PROMO_REVENUE.sum()
+    )
 
     result_df = pd.DataFrame({"PROMO_REVENUE": [total]})
     return result_df
@@ -749,7 +758,10 @@ def q15(root: str, storage_options: Dict):
 
     lineitem_filtered = lineitem[
         (lineitem["L_SHIPDATE"] >= pd.Timestamp("1996-01-01"))
-        & (lineitem["L_SHIPDATE"] < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3)))
+        & (
+            lineitem["L_SHIPDATE"]
+            < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3))
+        )
     ]
     lineitem_filtered["REVENUE_PARTS"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
         1.0 - lineitem_filtered["L_DISCOUNT"]
@@ -809,8 +821,9 @@ def q16(root: str, storage_options: Dict):
     )
     total = total[total["S_SUPPKEY"].isna()]
     total = total.loc[:, ["P_BRAND", "P_TYPE", "P_SIZE", "PS_SUPPKEY"]]
-    total = total.groupby(["P_BRAND", "P_TYPE", "P_SIZE"], as_index=False)["PS_SUPPKEY"] \
-                .nunique()
+    total = total.groupby(["P_BRAND", "P_TYPE", "P_SIZE"], as_index=False)[
+        "PS_SUPPKEY"
+    ].nunique()
     total.columns = ["P_BRAND", "P_TYPE", "P_SIZE", "SUPPLIER_CNT"]
     total = total.sort_values(
         by=["SUPPLIER_CNT", "P_BRAND", "P_TYPE", "P_SIZE"],
@@ -995,8 +1008,9 @@ def q20(root: str, storage_options: Dict):
         left_on=["PS_PARTKEY", "PS_SUPPKEY"],
         right_on=["L_PARTKEY", "L_SUPPKEY"],
     )
-    gb = jn2.groupby(["PS_PARTKEY", "PS_SUPPKEY", "PS_AVAILQTY"], as_index=False)["L_QUANTITY"] \
-            .sum()
+    gb = jn2.groupby(["PS_PARTKEY", "PS_SUPPKEY", "PS_AVAILQTY"], as_index=False)[
+        "L_QUANTITY"
+    ].sum()
     gbsel = gb.PS_AVAILQTY > (0.5 * gb.L_QUANTITY)
     fgb = gb[gbsel]
     jn3 = fgb.merge(supplier, left_on="PS_SUPPKEY", right_on="S_SUPPKEY")
@@ -1040,10 +1054,9 @@ def q21(root: str, storage_options: Dict):
     )
 
     # Not Exists: Check the exists condition isn't still satisfied on the output.
-    lineitem_orderkeys = (
-        lineitem_filtered.groupby("L_ORDERKEY", as_index=False)["L_SUPPKEY"]
-        .nunique()
-    )
+    lineitem_orderkeys = lineitem_filtered.groupby("L_ORDERKEY", as_index=False)[
+        "L_SUPPKEY"
+    ].nunique()
     lineitem_orderkeys.columns = ["L_ORDERKEY", "nunique_col"]
     lineitem_orderkeys = lineitem_orderkeys[lineitem_orderkeys["nunique_col"] == 1]
     lineitem_orderkeys = lineitem_orderkeys.loc[:, ["L_ORDERKEY"]]
@@ -1227,7 +1240,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("pandas", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "pandas",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -1259,7 +1278,14 @@ def main():
     print(f"Queries to run: {queries}")
     print(f"Include IO: {args.include_io}")
 
-    run_queries(path, storage_options, queries, args.log_time, args.print_result, args.include_io)
+    run_queries(
+        path,
+        storage_options,
+        queries,
+        args.log_time,
+        args.print_result,
+        args.include_io,
+    )
 
 
 if __name__ == "__main__":

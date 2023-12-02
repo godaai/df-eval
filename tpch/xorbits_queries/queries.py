@@ -1,12 +1,13 @@
-import os
-import json
-import time
 import argparse
+import json
+import os
+import time
 import traceback
 from typing import Dict
 
 import xorbits
 import xorbits.pandas as pd
+
 pd.set_option("show_progress", False)
 
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
@@ -192,7 +193,9 @@ def q01(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     date = pd.Timestamp("1998-09-02")
     lineitem_filtered = lineitem.loc[
@@ -243,8 +246,9 @@ def q01(
             "DISC_PRICE": "SUM_DISC_PRICE",
             "CHARGE": "SUM_CHARGE",
             "L_DISCOUNT": "AVG_DISC",
-            "L_ORDERKEY": "COUNT_ORDER"
-        })
+            "L_ORDERKEY": "COUNT_ORDER",
+        }
+    )
     return total
 
 
@@ -255,10 +259,18 @@ def q02(
     gpu: bool = False,
 ):
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    partsupp = load_partsupp(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    region = load_region(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    partsupp = load_partsupp(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    region = load_region(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     size = 15
     p_type = "BRASS"
@@ -338,7 +350,9 @@ def q02(
             "P_MFGR",
         ],
     ]
-    min_values = merged_df.groupby("P_PARTKEY", as_index=False, sort=False)["PS_SUPPLYCOST"].min()
+    min_values = merged_df.groupby("P_PARTKEY", as_index=False, sort=False)[
+        "PS_SUPPLYCOST"
+    ].min()
     min_values.columns = ["P_PARTKEY_CPY", "MIN_SUPPLYCOST"]
     merged_df = merged_df.merge(
         min_values,
@@ -374,16 +388,24 @@ def q03(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     mktsegment = "HOUSEHOLD"
     date = pd.Timestamp("1995-03-04")
     lineitem_filtered = lineitem.loc[
         :, ["L_ORDERKEY", "L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE"]
     ]
-    orders_filtered = orders.loc[:, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]]
+    orders_filtered = orders.loc[
+        :, ["O_ORDERKEY", "O_CUSTKEY", "O_ORDERDATE", "O_SHIPPRIORITY"]
+    ]
     customer_filtered = customer.loc[:, ["C_MKTSEGMENT", "C_CUSTKEY"]]
     lsel = lineitem_filtered.L_SHIPDATE > date
     osel = orders_filtered.O_ORDERDATE < date
@@ -395,7 +417,9 @@ def q03(
     jn2 = jn1.merge(flineitem, left_on="O_ORDERKEY", right_on="L_ORDERKEY")
     jn2["REVENUE"] = jn2.L_EXTENDEDPRICE * (1 - jn2.L_DISCOUNT)
     total = (
-        jn2.groupby(["L_ORDERKEY", "O_ORDERDATE", "O_SHIPPRIORITY"], as_index=False, sort=False)["REVENUE"]
+        jn2.groupby(
+            ["L_ORDERKEY", "O_ORDERDATE", "O_SHIPPRIORITY"], as_index=False, sort=False
+        )["REVENUE"]
         .sum()
         .sort_values(["REVENUE"], ascending=False)
     )
@@ -413,8 +437,12 @@ def q04(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     date2 = pd.Timestamp("1993-8-01")
     date1 = date2 + pd.DateOffset(months=3)
@@ -438,12 +466,24 @@ def q05(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    region = load_region(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    region = load_region(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     region_name = "ASIA"
     date1 = pd.Timestamp("1996-01-01")
@@ -474,7 +514,9 @@ def q06(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     date1 = pd.Timestamp("1996-01-01")
     date2 = date1 + pd.DateOffset(years=1)
@@ -501,11 +543,21 @@ def q07(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     nation1 = "FRANCE"
     nation2 = "GERMANY"
@@ -608,12 +660,24 @@ def q08(
     gpu: bool = False,
 ):
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    region = load_region(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    region = load_region(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     nation_name = "BRAZIL"
     region_name = "AMERICA"
@@ -621,7 +685,9 @@ def q08(
     part_filtered = part[(part["P_TYPE"] == p_type)]
     part_filtered = part_filtered.loc[:, ["P_PARTKEY"]]
     lineitem_filtered = lineitem.loc[:, ["L_PARTKEY", "L_SUPPKEY", "L_ORDERKEY"]]
-    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (1.0 - lineitem["L_DISCOUNT"])
+    lineitem_filtered["VOLUME"] = lineitem["L_EXTENDEDPRICE"] * (
+        1.0 - lineitem["L_DISCOUNT"]
+    )
     total = part_filtered.merge(
         lineitem_filtered, left_on="P_PARTKEY", right_on="L_PARTKEY", how="inner"
     )
@@ -647,8 +713,9 @@ def q08(
     )
     total = total.loc[:, ["VOLUME", "S_NATIONKEY", "O_YEAR", "C_NATIONKEY"]]
     n1_filtered = nation.loc[:, ["N_NATIONKEY", "N_REGIONKEY"]]
-    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]] \
-        .rename(columns={"N_NAME": "NATION"})
+    n2_filtered = nation.loc[:, ["N_NATIONKEY", "N_NAME"]].rename(
+        columns={"N_NAME": "NATION"}
+    )
     total = total.merge(
         n1_filtered, left_on="C_NATIONKEY", right_on="N_NATIONKEY", how="inner"
     )
@@ -684,11 +751,21 @@ def q09(
     gpu: bool = False,
 ):
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    partsupp = load_partsupp(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    partsupp = load_partsupp(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     p_name = "ghost"
     psel = part.P_NAME.str.contains(p_name)
@@ -717,10 +794,18 @@ def q10(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     date1 = pd.Timestamp("1994-11-01")
     date2 = date1 + pd.DateOffset(months=3)
@@ -768,9 +853,15 @@ def q11(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    partsupp = load_partsupp(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    partsupp = load_partsupp(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     nation_name = "GERMANY"
     fraction = 0.0001
@@ -806,8 +897,12 @@ def q12(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     shipmode1 = "MAIL"
     shipmode2 = "SHIP"
@@ -844,8 +939,12 @@ def q13(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     word1 = "special"
     word2 = "requests"
@@ -877,7 +976,9 @@ def q14(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
 
     startDate = pd.Timestamp("1994-03-01")
@@ -887,12 +988,17 @@ def q14(
     lineitem_filtered = lineitem.loc[
         :, ["L_EXTENDEDPRICE", "L_DISCOUNT", "L_SHIPDATE", "L_PARTKEY"]
     ]
-    sel = (lineitem_filtered.L_SHIPDATE >= startDate) \
-        & (lineitem_filtered.L_SHIPDATE < endDate)
+    sel = (lineitem_filtered.L_SHIPDATE >= startDate) & (
+        lineitem_filtered.L_SHIPDATE < endDate
+    )
     flineitem = lineitem_filtered[sel]
     jn = flineitem.merge(part_filtered, left_on="L_PARTKEY", right_on="P_PARTKEY")
     jn["PROMO_REVENUE"] = jn.L_EXTENDEDPRICE * (1.0 - jn.L_DISCOUNT)
-    total = jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum() * 100 / jn.PROMO_REVENUE.sum()
+    total = (
+        jn[jn.P_TYPE.str.startswith(p_type_like)].PROMO_REVENUE.sum()
+        * 100
+        / jn.PROMO_REVENUE.sum()
+    )
 
     result_df = pd.DataFrame({"PROMO_REVENUE": [total]})
     return result_df
@@ -904,12 +1010,19 @@ def q15(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     lineitem_filtered = lineitem[
         (lineitem["L_SHIPDATE"] >= pd.Timestamp("1996-01-01"))
-        & (lineitem["L_SHIPDATE"] < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3)))
+        & (
+            lineitem["L_SHIPDATE"]
+            < (pd.Timestamp("1996-01-01") + pd.DateOffset(months=3))
+        )
     ]
     lineitem_filtered["REVENUE_PARTS"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
         1.0 - lineitem_filtered["L_DISCOUNT"]
@@ -940,8 +1053,12 @@ def q16(
     gpu: bool = False,
 ):
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    partsupp = load_partsupp(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    partsupp = load_partsupp(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     brand = "Brand#45"
     p_type = "MEDIUM POLISHED"
@@ -974,8 +1091,9 @@ def q16(
     )
     total = total[total["S_SUPPKEY"].isna()]
     total = total.loc[:, ["P_BRAND", "P_TYPE", "P_SIZE", "PS_SUPPKEY"]]
-    total = total.groupby(["P_BRAND", "P_TYPE", "P_SIZE"], as_index=False, sort=False)["PS_SUPPKEY"] \
-                .nunique()
+    total = total.groupby(["P_BRAND", "P_TYPE", "P_SIZE"], as_index=False, sort=False)[
+        "PS_SUPPKEY"
+    ].nunique()
     total.columns = ["P_BRAND", "P_TYPE", "P_SIZE", "SUPPLIER_CNT"]
     total = total.sort_values(
         by=["SUPPLIER_CNT", "P_BRAND", "P_TYPE", "P_SIZE"],
@@ -991,7 +1109,9 @@ def q17(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
 
     brand = "Brand#23"
@@ -1007,9 +1127,9 @@ def q17(
         :, ["L_QUANTITY", "L_EXTENDEDPRICE", "P_PARTKEY"]
     ]
     lineitem_filtered = lineitem.loc[:, ["L_PARTKEY", "L_QUANTITY"]]
-    lineitem_avg = lineitem_filtered.groupby(["L_PARTKEY"], as_index=False, sort=False).agg(
-        avg=pd.NamedAgg(column="L_QUANTITY", aggfunc="mean")
-    )
+    lineitem_avg = lineitem_filtered.groupby(
+        ["L_PARTKEY"], as_index=False, sort=False
+    ).agg(avg=pd.NamedAgg(column="L_QUANTITY", aggfunc="mean"))
     lineitem_avg["avg"] = 0.2 * lineitem_avg["avg"]
     lineitem_avg = lineitem_avg.loc[:, ["L_PARTKEY", "avg"]]
     total = line_part_merge.merge(
@@ -1027,9 +1147,15 @@ def q18(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     quantity = 300
     gb1 = lineitem.groupby("L_ORDERKEY", as_index=False)["L_QUANTITY"].sum()
@@ -1053,7 +1179,9 @@ def q19(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
 
     quantity1 = 4
@@ -1160,11 +1288,19 @@ def q20(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
     part = load_part(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    partsupp = load_partsupp(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    partsupp = load_partsupp(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     p_name = "azure"
     date1 = pd.Timestamp("1996-01-01")
@@ -1181,8 +1317,9 @@ def q20(
         left_on=["PS_PARTKEY", "PS_SUPPKEY"],
         right_on=["L_PARTKEY", "L_SUPPKEY"],
     )
-    gb = jn2.groupby(["PS_PARTKEY", "PS_SUPPKEY", "PS_AVAILQTY"], as_index=False, sort=False)["L_QUANTITY"] \
-            .sum()
+    gb = jn2.groupby(
+        ["PS_PARTKEY", "PS_SUPPKEY", "PS_AVAILQTY"], as_index=False, sort=False
+    )["L_QUANTITY"].sum()
     gbsel = gb.PS_AVAILQTY > (0.5 * gb.L_QUANTITY)
     fgb = gb[gbsel]
     jn3 = fgb.merge(supplier, left_on="PS_SUPPKEY", right_on="S_SUPPKEY")
@@ -1199,10 +1336,18 @@ def q21(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    lineitem = load_lineitem(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    supplier = load_supplier(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    nation = load_nation(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    lineitem = load_lineitem(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    supplier = load_supplier(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    nation = load_nation(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     nation_name = "SAUDI ARABIA"
     lineitem_filtered = lineitem.loc[
@@ -1231,10 +1376,9 @@ def q21(
     )
 
     # Not Exists: Check the exists condition isn't still satisfied on the output.
-    lineitem_orderkeys = (
-        lineitem_filtered.groupby("L_ORDERKEY", as_index=False, sort=False)["L_SUPPKEY"]
-        .nunique()
-    )
+    lineitem_orderkeys = lineitem_filtered.groupby(
+        "L_ORDERKEY", as_index=False, sort=False
+    )["L_SUPPKEY"].nunique()
     lineitem_orderkeys.columns = ["L_ORDERKEY", "nunique_col"]
     lineitem_orderkeys = lineitem_orderkeys[lineitem_orderkeys["nunique_col"] == 1]
     lineitem_orderkeys = lineitem_orderkeys.loc[:, ["L_ORDERKEY"]]
@@ -1281,8 +1425,12 @@ def q22(
     use_arrow_dtype: bool = None,
     gpu: bool = False,
 ):
-    customer = load_customer(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
-    orders = load_orders(root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+    customer = load_customer(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
+    orders = load_orders(
+        root, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+    )
 
     I1 = "13"
     I2 = "31"
@@ -1410,14 +1558,18 @@ def run_queries(
     for query in queries:
         loaders = query_to_loaders[query]
         for loader in loaders:
-            xorbits.run(loader(path, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu))
+            xorbits.run(
+                loader(path, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+            )
     print(f"Total data loading time (s): {time.time() - data_start_time}")
 
     total_start = time.time()
     for query in queries:
         try:
             start_time = time.time()
-            result = query_to_runner[query](path, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu)
+            result = query_to_runner[query](
+                path, storage_options, use_arrow_dtype=use_arrow_dtype, gpu=gpu
+            )
             xorbits.run(result)
             without_io_time = time.time() - start_time
             success = True
@@ -1430,7 +1582,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("xorbits", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "xorbits",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -1515,7 +1673,7 @@ def main():
             print_result=args.print_result,
             include_io=args.include_io,
             use_arrow_dtype=args.use_arrow_dtype,
-            gpu=args.gpu
+            gpu=args.gpu,
         )
     finally:
         xorbits.shutdown()

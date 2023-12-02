@@ -1,15 +1,15 @@
+import argparse
 import os
 import time
-import argparse
 import traceback
 
 import pandas as pd
-pd.set_option('display.max_columns', None)
+
+pd.set_option("display.max_columns", None)
 
 import duckdb
-from duckdb import DuckDBPyRelation
-
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
+from duckdb import DuckDBPyRelation
 
 dataset_dict = {}
 
@@ -225,7 +225,7 @@ def q03(root: str):
 def q04(root: str):
     line_item = load_lineitem(root)
     orders = load_orders(root)
-    
+
     DATE = "1993-08-01"
     total = duckdb.sql(
         f"""SELECT
@@ -317,7 +317,7 @@ def q07(root: str):
     supplier = load_supplier(root)
     lineitem = load_lineitem(root)
     customer = load_customer(root)
-    
+
     NATION1 = "FRANCE"
     NATION2 = "GERMANY"
     total = duckdb.sql(
@@ -370,12 +370,12 @@ def q08(root: str):
     supplier = load_supplier(root)
     lineitem = load_lineitem(root)
     customer = load_customer(root)
-    
+
     NATION = "BRAZIL"
     REGION = "AMERICA"
     TYPE = "ECONOMY ANODIZED STEEL"
     total = duckdb.sql(
-        F"""SELECT
+        f"""SELECT
                 O_YEAR,
                 SUM(CASE
                     WHEN NAtion = '{NATION}'
@@ -507,12 +507,13 @@ def q10(root: str):
     )
     return total
 
+
 # todo: result is empty
 def q11(root: str):
     partsupp = load_partsupp(root)
     supplier = load_supplier(root)
     nation = load_nation(root)
-   
+
     NATION = "GERMANY"
     FRACTION = 0.0001
 
@@ -597,7 +598,7 @@ def q13(root: str):
     WORD1 = "special"
     WORD2 = "requests"
     total = duckdb.sql(
-        F"""SELECT
+        f"""SELECT
                 C_COUNT, COUNT(*) AS CUSTDIST
             FROM (
                 SELECT
@@ -622,7 +623,7 @@ def q13(root: str):
 def q14(root):
     lineitem = load_lineitem(root)
     part = load_part(root)
-    
+
     DATE = "1994-03-01"
     total = duckdb.sql(
         f"""SELECT
@@ -703,7 +704,7 @@ def q16(root):
     SIZE7 = 36
     SIZE8 = 9
     total = duckdb.sql(
-        F"""SELECT
+        f"""SELECT
                 P_BRAND,
                 P_TYPE,
                 P_SIZE,
@@ -971,7 +972,7 @@ def q22(root):
     I6 = 18
     I7 = 17
     total = duckdb.sql(
-        F"""SELECT
+        f"""SELECT
                 CNTRYCODE,
                 COUNT(*) AS NUMCUST,
                 SUM(C_ACCTBAL) AS TOTACCTBAL
@@ -1085,13 +1086,7 @@ query_to_runner = {
 }
 
 
-def run_queries(
-    path,
-    queries,
-    log_time=True,
-    print_result=False,
-    include_io=True
-):
+def run_queries(path, queries, log_time=True, print_result=False, include_io=True):
     print(f"print_result: {print_result}")
     version = duckdb.__version__
     data_start_time = time.time()
@@ -1118,7 +1113,13 @@ def run_queries(
         finally:
             pass
         if log_time:
-            log_time_fn("duckdb", query, version=version, without_io_time=without_io_time, success=success)
+            log_time_fn(
+                "duckdb",
+                query,
+                version=version,
+                without_io_time=without_io_time,
+                success=success,
+            )
     print(f"Total query execution time (s): {time.time() - total_start}")
 
 
@@ -1127,8 +1128,10 @@ def main():
     # aws settings
     parser.add_argument("--account", type=str, help="AWS access id")
     parser.add_argument("--key", type=str, help="AWS secret access key")
-    parser.add_argument("--endpoint", type=str, help="AWS region endpoint related to your S3")
-    parser = parse_common_arguments(parser)  
+    parser.add_argument(
+        "--endpoint", type=str, help="AWS region endpoint related to your S3"
+    )
+    parser = parse_common_arguments(parser)
     args = parser.parse_args()
     path: str = args.path
     print(f"Path: {args.path}")
@@ -1141,17 +1144,12 @@ def main():
 
     if "s3://" in path:
         import boto3
+
         s3_client = boto3.client(
-            's3', 
-            aws_access_key_id=args.account,
-            aws_secret_access_key=args.key
+            "s3", aws_access_key_id=args.account, aws_secret_access_key=args.key
         )
-    
-    run_queries(path, 
-                queries, 
-                args.log_time, 
-                args.print_result,
-                args.include_io)
+
+    run_queries(path, queries, args.log_time, args.print_result, args.include_io)
 
 
 if __name__ == "__main__":
