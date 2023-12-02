@@ -5,43 +5,6 @@ r6i.large instance as the supervisor, and 5 r6i.4xlarge instances as the workers
 TPC-H SF 1000 consists of an r6i.large instance as the supervisor, and 16 r6i.8xlarge instances.
 
 
-
-## Software versions
-- Xorbits: 0.1.0
-
-## SF1000: Xorbits
-Although Xorbits is able to pass all the queries in a row, Dask, Pandas API on Spark and Modin 
-failed on most of the queries. Thus, we are not able to compare the performance difference now, and
-we plan to try again later.
-
-![image info](https://xorbits.io/res/xorbits_1t.png)
-
-|     |  Xorbits  |
-|:---:|:---------:|
-| Q01 |  141.810  |
-| Q02 |   35.000  |
-| Q03 |  194.630  |
-| Q04 |  225.570  |
-| Q05 |  185.560  |
-| Q06 |  101.430  |
-| Q07 |  157.150  |
-| Q08 |  143.060  |
-| Q09 |  249.270  |
-| Q10 |  131.940  |
-| Q11 |   31.823  |
-| Q12 |   89.139  |
-| Q13 |   40.157  |
-| Q14 |   76.638  |
-| Q15 |  108.130  |
-| Q16 |   43.952  |
-| Q17 |  304.620  |
-| Q18 |  126.880  |
-| Q19 |   69.102  |
-| Q20 |  103.000  |
-| Q21 |  454.020  |
-| Q22 |  162.460  |
-|Total|  3012.88  |
-
 ## Run
 
 ### Environment Setup
