@@ -1,8 +1,4 @@
 # TPC-H Benchmarks
-We compared Xorbits to Dask, Pandas API on Spark, and Modin on Ray with TPC-H benchmarks at scale
-factor 100 (~100 GB dataset) and 1000 (~1 TB dataset). The cluster for TPC-H SF 100 consists of an
-r6i.large instance as the supervisor, and 5 r6i.4xlarge instances as the workers. The cluster for
-TPC-H SF 1000 consists of an r6i.large instance as the supervisor, and 16 r6i.8xlarge instances.
 
 
 ## Run
