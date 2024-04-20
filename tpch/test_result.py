@@ -62,6 +62,17 @@ def main():
     print(f"current result: {args.cur_result_path}")
     print(f"answer path: {args.answer_path}")
 
+    # Check if answer_path exists
+    if not os.path.exists(args.answer_path):
+        print(f"Error: answer_path '{args.answer_path}' does not exist.")
+        return
+
+    # Check if cur_result_path exists
+    if not os.path.exists(args.cur_result_path):
+        print(f"Error: cur_result_path '{args.cur_result_path}' does not exist.")
+        return
+
+
     queries = list(range(1, 23))
     if args.queries is not None:
         queries = args.queries
