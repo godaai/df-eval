@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict
 
 import polars as pl
+import sys
 
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
 
@@ -121,7 +122,7 @@ def q01(root: str, storage_options: Dict):
                 pl.mean("L_QUANTITY").alias("AVG_QTY"),
                 pl.mean("L_EXTENDEDPRICE").alias("AVG_PRICE"),
                 pl.mean("L_DISCOUNT").alias("AVG_DISC"),
-                pl.count().alias("COUNT_ORDER"),
+                pl.len(),
             ]
         )
         .sort(["L_RETURNFLAG", "L_LINESTATUS"])
@@ -175,7 +176,6 @@ def q02(root: str, storage_options: Dict):
             by=["S_ACCTBAL", "N_NAME", "S_NAME", "P_PARTKEY"],
             descending=[True, False, False, False],
         )
-        .limit(100)
         .with_columns(pl.col(pl.datatypes.Utf8).str.strip_chars().name.keep())
     )
 
@@ -183,8 +183,8 @@ def q02(root: str, storage_options: Dict):
 
 
 def q03(root: str, storage_options: Dict):
-    var_1 = var_2 = datetime(1995, 3, 15)
-    var_3 = "BUILDING"
+    var_1 = var_2 = datetime(1995, 3, 4)
+    var_3 = "HOUSEHOLD"
 
     customer_ds = load_customer_lazy(root, storage_options)
     line_item_ds = load_lineitem_lazy(root, storage_options)
@@ -208,16 +208,15 @@ def q03(root: str, storage_options: Dict):
                 "O_SHIPPRIORITY",
             ]
         )
-        .sort(by=["REVENUE", "O_ORDERDATE"], descending=[True, False])
-        .limit(10)
+        .sort(by=["REVENUE", "O_ORDERDATE"], descending=[True, False]).limit(10)
     )
 
     return q_final
 
 
 def q04(root: str, storage_options: Dict):
-    var_1 = datetime(1993, 7, 1)
-    var_2 = datetime(1993, 10, 1)
+    var_1 = datetime(1993, 8, 1)
+    var_2 = datetime(1993, 11, 1)
 
     line_item_ds = load_lineitem_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options)
@@ -228,7 +227,7 @@ def q04(root: str, storage_options: Dict):
         .filter(pl.col("L_COMMITDATE") < pl.col("L_RECEIPTDATE"))
         .unique(subset=["O_ORDERPRIORITY", "L_ORDERKEY"])
         .group_by("O_ORDERPRIORITY")
-        .agg(pl.count().alias("ORDER_COUNT"))
+        .agg(pl.len().alias("ORDER_COUNT"))
         .sort(by="O_ORDERPRIORITY")
         .with_columns(pl.col("ORDER_COUNT").cast(pl.datatypes.Int64))
     )
@@ -238,8 +237,8 @@ def q04(root: str, storage_options: Dict):
 
 def q05(root: str, storage_options: Dict):
     var_1 = "ASIA"
-    var_2 = datetime(1994, 1, 1)
-    var_3 = datetime(1995, 1, 1)
+    var_2 = datetime(1996, 1, 1)
+    var_3 = datetime(1997, 1, 1)
 
     region_ds = load_region_lazy(root, storage_options)
     nation_ds = load_nation_lazy(root, storage_options)
@@ -272,8 +271,8 @@ def q05(root: str, storage_options: Dict):
 
 
 def q06(root: str, storage_options: Dict):
-    var_1 = datetime(1994, 1, 1)
-    var_2 = datetime(1995, 1, 1)
+    var_1 = datetime(1996, 1, 1)
+    var_2 = datetime(1997, 1, 1)
     var_3 = 24
 
     line_item_ds = load_lineitem_lazy(root, storage_options)
@@ -282,7 +281,7 @@ def q06(root: str, storage_options: Dict):
         line_item_ds.filter(
             pl.col("L_SHIPDATE").is_between(var_1, var_2, closed="left")
         )
-        .filter(pl.col("L_DISCOUNT").is_between(0.05, 0.07))
+        .filter(pl.col("L_DISCOUNT").is_between(0.08, 1.00))
         .filter(pl.col("L_QUANTITY") < var_3)
         .with_columns(
             (pl.col("L_EXTENDEDPRICE") * pl.col("L_DISCOUNT")).alias("REVENUE")
@@ -340,6 +339,12 @@ def q07(root: str, storage_options: Dict):
 
 
 def q08(root: str, storage_options: Dict):
+    NATION = "BRAZIL"
+    REGION = "AMERICA"
+    TYPE = "ECONOMY ANODIZED STEEL"
+    date_begin = datetime(1995,1,1)
+    date_end = datetime(1996,12,31)
+
     part_ds = load_part_lazy(root, storage_options)
     supplier_ds = load_supplier_lazy(root, storage_options)
     line_item_ds = load_lineitem_lazy(root, storage_options)
@@ -358,14 +363,14 @@ def q08(root: str, storage_options: Dict):
         .join(customer_ds, left_on="O_CUSTKEY", right_on="C_CUSTKEY")
         .join(n1, left_on="C_NATIONKEY", right_on="N_NATIONKEY")
         .join(region_ds, left_on="N_REGIONKEY", right_on="R_REGIONKEY")
-        .filter(pl.col("R_NAME") == "AMERICA")
+        .filter(pl.col("R_NAME") == REGION)
         .join(n2, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
         .filter(
             pl.col("O_ORDERDATE").is_between(
-                datetime(1995, 1, 1), datetime(1996, 12, 31)
+                date_begin, date_end
             )
         )
-        .filter(pl.col("P_TYPE") == "ECONOMY ANODIZED STEEL")
+        .filter(pl.col("P_TYPE") == TYPE)
         .select(
             [
                 pl.col("O_ORDERDATE").dt.year().alias("O_YEAR"),
@@ -376,19 +381,21 @@ def q08(root: str, storage_options: Dict):
             ]
         )
         .with_columns(
-            pl.when(pl.col("NATION") == "BRAZIL")
+            pl.when(pl.col("NATION") == NATION)
             .then(pl.col("VOLUME"))
             .otherwise(0)
             .alias("_tmp")
         )
         .group_by("O_YEAR")
-        .agg((pl.sum("_tmp") / pl.sum("VOLUME")).round(2).alias("MKT_SHARE"))
+        .agg((pl.sum("_tmp") / pl.sum("VOLUME")).alias("MKT_SHARE"))
         .sort("O_YEAR")
     )
     return q_final
 
 
 def q09(root: str, storage_options: Dict):
+    NAME = "ghost"
+
     part_ds = load_part_lazy(root, storage_options)
     supplier_ds = load_supplier_lazy(root, storage_options)
     line_item_ds = load_lineitem_lazy(root, storage_options)
@@ -406,7 +413,7 @@ def q09(root: str, storage_options: Dict):
         .join(part_ds, left_on="L_PARTKEY", right_on="P_PARTKEY")
         .join(orders_ds, left_on="L_ORDERKEY", right_on="O_ORDERKEY")
         .join(nation_ds, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
-        .filter(pl.col("P_NAME").str.contains("green"))
+        .filter(pl.col("P_NAME").str.contains(NAME))
         .select(
             [
                 pl.col("N_NAME").alias("NATION"),
@@ -418,7 +425,7 @@ def q09(root: str, storage_options: Dict):
             ]
         )
         .group_by(["NATION", "O_YEAR"])
-        .agg(pl.sum("AMOUNT").round(2).alias("SUM_PROFIT"))
+        .agg(pl.sum("AMOUNT").alias("SUM_PROFIT"))
         .sort(by=["NATION", "O_YEAR"], descending=[False, True])
     )
     return q_final
@@ -430,8 +437,8 @@ def q10(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     nation_ds = load_nation_lazy(root, storage_options)
 
-    var_1 = datetime(1993, 10, 1)
-    var_2 = datetime(1994, 1, 1)
+    var_1 = datetime(1994, 11, 1)
+    var_2 = datetime(1995, 2, 1)
 
     q_final = (
         customer_ds.join(orders_ds, left_on="C_CUSTKEY", right_on="O_CUSTKEY")
@@ -454,7 +461,6 @@ def q10(root: str, storage_options: Dict):
             [
                 (pl.col("L_EXTENDEDPRICE") * (1 - pl.col("L_DISCOUNT")))
                 .sum()
-                .round(2)
                 .alias("REVENUE")
             ]
         )
@@ -503,7 +509,6 @@ def q11(root: str, storage_options: Dict):
         .agg(
             (pl.col("PS_SUPPLYCOST") * pl.col("PS_AVAILQTY"))
             .sum()
-            .round(2)
             .alias("VALUE")
         )
         .with_columns(pl.lit(1).alias("LIT"))
@@ -543,9 +548,10 @@ def q12(root: str, storage_options: Dict):
             ]
         )
         .group_by("L_SHIPMODE")
-        .agg([pl.col("HIGH_LINE_COUNT").sum(), pl.col("LOW_LINE_COUNT").sum()])
+        .agg([pl.col("HIGH_LINE_COUNT").sum().cast(float).round(1), pl.col("LOW_LINE_COUNT").sum().cast(float).round(1)])
         .sort("L_SHIPMODE")
     )
+
     return q_final
 
 
@@ -564,14 +570,18 @@ def q13(root: str, storage_options: Dict):
         .group_by("C_CUSTKEY")
         .agg(
             [
-                pl.col("O_ORDERKEY").count().alias("C_COUNT"),
+                pl.col("O_ORDERKEY").len().alias("C_COUNT"),
                 pl.col("O_ORDERKEY").null_count().alias("NULL_C_COUNT"),
             ]
         )
         .with_columns((pl.col("C_COUNT") - pl.col("NULL_C_COUNT")).alias("C_COUNT"))
         .group_by("C_COUNT")
-        .count()
-        .select([pl.col("C_COUNT"), pl.col("COUNT").alias("CUSTDIST")])
+        .agg(
+            [
+                pl.len().alias("CUSTDIST")
+            ]
+        )
+        .select([pl.col("C_COUNT"), pl.col("CUSTDIST")])
         .sort(["CUSTDIST", "C_COUNT"], descending=[True, True])
     )
     return q_final
@@ -581,8 +591,8 @@ def q14(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
 
-    var_1 = datetime(1995, 9, 1)
-    var_2 = datetime(1995, 10, 1)
+    var_1 = datetime(1994, 3, 1)
+    var_2 = datetime(1994, 4, 1)
 
     q_final = (
         line_item_ds.join(part_ds, left_on="L_PARTKEY", right_on="P_PARTKEY")
@@ -596,7 +606,6 @@ def q14(root: str, storage_options: Dict):
                 .sum()
                 / (pl.col("L_EXTENDEDPRICE") * (1 - pl.col("L_DISCOUNT"))).sum()
             )
-            .round(2)
             .alias("PROMO_REVENUE")
         )
     )
@@ -633,24 +642,29 @@ def q15(root: str, storage_options: Dict):
     return q_final
 
 
+# 大改 https://github.com/pola-rs/tpch/blob/main/queries/polars/q16.py 有问题
 def q16(root: str, storage_options: Dict):
     part_supp_ds = load_partsupp_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
-    supplier_ds = (
-        load_supplier_lazy(root, storage_options)
-        .filter(pl.col("S_COMMENT").str.contains(".*Customer.*Complaints.*"))
-        .select(pl.col("S_SUPPKEY"), pl.col("S_SUPPKEY").alias("PS_SUPPKEY"))
-    )
+    supplier_ds = load_supplier_lazy(root, storage_options)
 
-    var_1 = "Brand#45"
+    BRAND = "Brand#45"
+    TYPE = "MEDIUM POLISHED"
+    SIZE_LIST = [49, 14, 23, 45, 19, 3, 36, 9]
 
     q_final = (
         part_ds.join(part_supp_ds, left_on="P_PARTKEY", right_on="PS_PARTKEY")
-        .filter(pl.col("P_BRAND") != var_1)
-        .filter(pl.col("P_TYPE").str.contains("MEDIUM POLISHED*").not_())
-        .filter(pl.col("P_SIZE").is_in([49, 14, 23, 45, 19, 3, 36, 9]))
-        .join(supplier_ds, left_on="PS_SUPPKEY", right_on="S_SUPPKEY", how="left")
-        .filter(pl.col("PS_SUPPKEY_RIGHT").is_null())
+        .filter(pl.col("P_BRAND") != BRAND)
+        .filter(pl.col("P_TYPE").str.contains(f"^{TYPE}").not_())
+        .filter(pl.col("P_SIZE").is_in(SIZE_LIST))
+        .join(
+            supplier_ds.filter(
+                pl.col("S_COMMENT").str.contains(".*CUSTOMER.*COMPLAINTS.*")
+            ).select(pl.col("S_SUPPKEY")),
+            left_on="PS_SUPPKEY",
+            right_on="S_SUPPKEY",
+            how="left",
+        )
         .group_by(["P_BRAND", "P_TYPE", "P_SIZE"])
         .agg([pl.col("PS_SUPPKEY").n_unique().alias("SUPPLIER_CNT")])
         .sort(
@@ -658,7 +672,9 @@ def q16(root: str, storage_options: Dict):
             descending=[True, False, False, False],
         )
     )
+
     return q_final
+
 
 
 def q17(root: str, storage_options: Dict):
@@ -680,7 +696,7 @@ def q17(root: str, storage_options: Dict):
         .select([pl.col("P_PARTKEY").alias("KEY"), pl.col("AVG_QUANTITY")])
         .join(res_1, left_on="KEY", right_on="P_PARTKEY")
         .filter(pl.col("L_QUANTITY") < pl.col("AVG_QUANTITY"))
-        .select((pl.col("L_EXTENDEDPRICE").sum() / 7.0).round(2).alias("AVG_YEARLY"))
+        .select((pl.col("L_EXTENDEDPRICE").sum() / 7.0).alias("AVG_YEARLY"))
     )
     return q_final
 
@@ -722,40 +738,44 @@ def q19(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
 
+    BRAND1 = "Brand#31"
+    BRAND2 = "BRAND#43"
+    QUANTITY1 = 4
+    QUANTITY2 = 15
+    QUANTITY3 = 26
     q_final = (
         part_ds.join(line_item_ds, left_on="P_PARTKEY", right_on="L_PARTKEY")
         .filter(pl.col("L_SHIPMODE").is_in(["AIR", "AIR REG"]))
         .filter(pl.col("L_SHIPINSTRUCT") == "DELIVER IN PERSON")
         .filter(
             (
-                (pl.col("P_BRAND") == "Brand#12")
+                (pl.col("P_BRAND") == BRAND1)
                 & pl.col("P_CONTAINER").is_in(
                     ["SM CASE", "SM BOX", "SM PACK", "SM PKG"]
                 )
-                & (pl.col("L_QUANTITY").is_between(1, 11))
+                & (pl.col("L_QUANTITY").is_between(QUANTITY1, QUANTITY1+10))
                 & (pl.col("P_SIZE").is_between(1, 5))
             )
             | (
-                (pl.col("P_BRAND") == "Brand#23")
+                (pl.col("P_BRAND") == BRAND2)
                 & pl.col("P_CONTAINER").is_in(
                     ["MED BAG", "MED BOX", "MED PKG", "MED PACK"]
                 )
-                & (pl.col("L_QUANTITY").is_between(10, 20))
+                & (pl.col("L_QUANTITY").is_between(QUANTITY2, QUANTITY2+10))
                 & (pl.col("P_SIZE").is_between(1, 10))
             )
             | (
-                (pl.col("P_BRAND") == "Brand#34")
+                (pl.col("P_BRAND") == BRAND2)
                 & pl.col("P_CONTAINER").is_in(
                     ["LG CASE", "LG BOX", "LG PACK", "LG PKG"]
                 )
-                & (pl.col("L_QUANTITY").is_between(20, 30))
+                & (pl.col("L_QUANTITY").is_between(QUANTITY3, QUANTITY2+10))
                 & (pl.col("P_SIZE").is_between(1, 15))
             )
         )
         .select(
             (pl.col("L_EXTENDEDPRICE") * (1 - pl.col("L_DISCOUNT")))
             .sum()
-            .round(2)
             .alias("REVENUE")
         )
     )
@@ -769,10 +789,10 @@ def q20(root: str, storage_options: Dict):
     part_ds = load_part_lazy(root, storage_options)
     part_supp_ds = load_partsupp_lazy(root, storage_options)
 
-    var_1 = datetime(1994, 1, 1)
-    var_2 = datetime(1995, 1, 1)
-    var_3 = "CANADA"
-    var_4 = "forest"
+    var_1 = datetime(1996, 1, 1)
+    var_2 = datetime(1997, 1, 1)
+    var_3 = "JORDAN"
+    var_4 = "azure"
 
     res_1 = (
         line_item_ds.filter(
@@ -834,9 +854,8 @@ def q21(root: str, storage_options: Dict):
         .filter(pl.col("N_NAME") == var_1)
         .filter(pl.col("O_ORDERSTATUS") == "F")
         .group_by("S_NAME")
-        .agg(pl.count().alias("NUMWAIT"))
+        .agg(pl.len().alias("NUMWAIT"))
         .sort(by=["NUMWAIT", "S_NAME"], descending=[True, False])
-        .limit(100)
     )
     return q_final
 
@@ -994,7 +1013,7 @@ def run_queries(
             without_io_time = time.time() - start_time
             success = True
             if print_result:
-                print_result_fn("pandas", result, query)
+                print_result_fn("polars", result.collect(), query)
         except Exception as e:
             print("".join(traceback.TracebackException.from_exception(e).format()))
             without_io_time = 0.0
