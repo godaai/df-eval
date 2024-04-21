@@ -513,7 +513,6 @@ def q08(root: str, storage_options: Dict):
         (orders["O_ORDERDATE"] >= pd.Timestamp("1995-01-01"))
         & (orders["O_ORDERDATE"] < pd.Timestamp("1997-01-01"))
     ]
-    orders_filtered = orders_filtered.copy()
     orders_filtered["O_YEAR"] = orders_filtered["O_ORDERDATE"].dt.year
     orders_filtered = orders_filtered.loc[:, ["O_ORDERKEY", "O_CUSTKEY", "O_YEAR"]]
     total = total.merge(
@@ -696,10 +695,9 @@ def q12(root: str, storage_options: Dict):
         columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"}
     )
 
-    # Round the result to one decimal place
-    total["HIGH_LINE_COUNT"] = total["HIGH_LINE_COUNT"].astype(float).round(1)
-    total["LOW_LINE_COUNT"] = total["LOW_LINE_COUNT"].astype(float).round(1)
-
+    # Round the result to one decimal place -- If you use test_result.py to test the results, please uncomment the following two lines.
+    # total["HIGH_LINE_COUNT"] = total["HIGH_LINE_COUNT"].astype(float).round(1)
+    # total["LOW_LINE_COUNT"] = total["LOW_LINE_COUNT"].astype(float).round(1)
 
     return total
 
