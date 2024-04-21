@@ -269,7 +269,7 @@ def q02(root: str, storage_options: Dict):
         by=["S_ACCTBAL", "N_NAME", "S_NAME", "P_PARTKEY"],
         ascending=[False, True, True, True],
     )
-    total = total
+    total = total.head(100)
 
     return total
 
@@ -399,8 +399,8 @@ def q07(root: str, storage_options: Dict):
         (lineitem["L_SHIPDATE"] >= pd.Timestamp("1995-01-01"))
         & (lineitem["L_SHIPDATE"] < pd.Timestamp("1997-01-01"))
     ]
-    lineitem_filtered["L_YEAR"] = lineitem_filtered["L_SHIPDATE"].dt.year
-    lineitem_filtered["VOLUME"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
+    lineitem_filtered.loc[:, "L_YEAR"] = lineitem_filtered["L_SHIPDATE"].dt.year
+    lineitem_filtered.loc[:, "VOLUME"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
         1.0 - lineitem_filtered["L_DISCOUNT"]
     )
     lineitem_filtered = lineitem_filtered.loc[
@@ -513,6 +513,7 @@ def q08(root: str, storage_options: Dict):
         (orders["O_ORDERDATE"] >= pd.Timestamp("1995-01-01"))
         & (orders["O_ORDERDATE"] < pd.Timestamp("1997-01-01"))
     ]
+    orders_filtered = orders_filtered.copy()
     orders_filtered["O_YEAR"] = orders_filtered["O_ORDERDATE"].dt.year
     orders_filtered = orders_filtered.loc[:, ["O_ORDERKEY", "O_CUSTKEY", "O_YEAR"]]
     total = total.merge(
@@ -722,7 +723,6 @@ def q13(root: str, storage_options: Dict):
         C_COUNT=pd.NamedAgg(column="O_ORDERKEY", aggfunc="count")
     )
     total = count_df.groupby(["C_COUNT"], as_index=False).size()
-    print(total)
     total.columns = ["C_COUNT", "CUSTDIST"]
     total = total.sort_values(
         by=["CUSTDIST", "C_COUNT"],
@@ -797,18 +797,18 @@ def q16(root: str, storage_options: Dict):
     partsupp = load_partsupp(root, storage_options)
     supplier = load_supplier(root, storage_options)
 
-    BRAND = "Brand#45"
-    TYPE = "MEDIUM POLISHED"
-    SIZE_LIST = [49, 14, 23, 45, 19, 3, 36, 9]
+    brand = "Brand#45"
+    type = "MEDIUM POLISHED"
+    size_list = [49, 14, 23, 45, 19, 3, 36, 9]
 
     # Merge part and partsupp DataFrames
     merged_df = pd.merge(part, partsupp, left_on="P_PARTKEY", right_on="PS_PARTKEY", how="inner")
 
     # Apply filters
     filtered_df = merged_df[
-        (merged_df["P_BRAND"] != BRAND) &
-        (~merged_df["P_TYPE"].str.startswith(TYPE)) &
-        (merged_df["P_SIZE"].isin(SIZE_LIST))
+        (merged_df["P_BRAND"] != brand) &
+        (~merged_df["P_TYPE"].str.startswith(type)) &
+        (merged_df["P_SIZE"].isin(size_list))
     ]
 
     # Exclude unwanted suppliers
@@ -884,7 +884,8 @@ def q19(root: str, storage_options: Dict):
     quantity2 = 15
     quantity3 = 26
     brand1 = "Brand#31"
-    brand2 = "BRAND#43"
+    brand2 = "Brand#24"
+    brand3 = "Brand#35"
 
     lsel = (
         (
@@ -927,7 +928,7 @@ def q19(root: str, storage_options: Dict):
         )
         | (
             (part.P_SIZE <= 15)
-            & (part.P_BRAND == brand2)
+            & (part.P_BRAND == brand3)
             & (
                 (part.P_CONTAINER == "LG BOX")
                 | (part.P_CONTAINER == "LG CASE")
@@ -941,42 +942,42 @@ def q19(root: str, storage_options: Dict):
     jn = flineitem.merge(fpart, left_on="L_PARTKEY", right_on="P_PARTKEY")
     jnsel = (
         (
-        (jn.P_BRAND == brand1)
-        & (
-            (jn.P_CONTAINER == "SM BOX")
-            | (jn.P_CONTAINER == "SM CASE")
-            | (jn.P_CONTAINER == "SM PACK")
-            | (jn.P_CONTAINER == "SM PKG")
-        )
-        & (jn.L_QUANTITY >= quantity1)
-        & (jn.L_QUANTITY <= quantity1 + 10)
-        & (jn.P_SIZE <= 5)
-        )
-        |
-        (
-        (jn.P_BRAND == brand2)
-        & (
-            (jn.P_CONTAINER == "MED BAG")
-            | (jn.P_CONTAINER == "MED BOX")
-            | (jn.P_CONTAINER == "MED PACK")
-            | (jn.P_CONTAINER == "MED PKG")
-        )
-        & (jn.L_QUANTITY >= quantity2)
-        & (jn.L_QUANTITY <= quantity2 + 10)
-        & (jn.P_SIZE <= 10)
+            (jn.P_BRAND == brand1)
+            & (
+                (jn.P_CONTAINER == "SM BOX")
+                | (jn.P_CONTAINER == "SM CASE")
+                | (jn.P_CONTAINER == "SM PACK")
+                | (jn.P_CONTAINER == "SM PKG")
+            )
+            & (jn.L_QUANTITY >= quantity1)
+            & (jn.L_QUANTITY <= quantity1 + 10)
+            & (jn.P_SIZE <= 5)
         )
         |
         (
-         (jn.P_BRAND == brand2)
-        & (
-            (jn.P_CONTAINER == "LG BOX")
-            | (jn.P_CONTAINER == "LG CASE")
-            | (jn.P_CONTAINER == "LG PACK")
-            | (jn.P_CONTAINER == "LG PKG")
+            (jn.P_BRAND == brand2)
+            & (
+                (jn.P_CONTAINER == "MED BAG")
+                | (jn.P_CONTAINER == "MED BOX")
+                | (jn.P_CONTAINER == "MED PACK")
+                | (jn.P_CONTAINER == "MED PKG")
+            )
+            & (jn.L_QUANTITY >= quantity2)
+            & (jn.L_QUANTITY <= quantity2 + 10)
+            & (jn.P_SIZE <= 10)
         )
-        & (jn.L_QUANTITY >= quantity3)
-        & (jn.L_QUANTITY <= quantity3 + 10)
-        & (jn.P_SIZE <= 15)
+        |
+        (
+            (jn.P_BRAND == brand3)
+            & (
+                (jn.P_CONTAINER == "LG BOX")
+                | (jn.P_CONTAINER == "LG CASE")
+                | (jn.P_CONTAINER == "LG PACK")
+                | (jn.P_CONTAINER == "LG PKG")
+            )
+            & (jn.L_QUANTITY >= quantity3)
+            & (jn.L_QUANTITY <= quantity3 + 10)
+            & (jn.P_SIZE <= 15)
         )
     )
     jn = jn[jnsel]
@@ -1088,7 +1089,7 @@ def q21(root: str, storage_options: Dict):
     total = total.groupby("S_NAME", as_index=False).size()
     total.columns = ["S_NAME", "NUMWAIT"]
     total = total.sort_values(by=["NUMWAIT", "S_NAME"], ascending=[False, True])
-    total = total
+    total = total.head(100)
 
     return total
 
