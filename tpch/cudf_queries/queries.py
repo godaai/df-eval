@@ -704,9 +704,9 @@ def q12(root: str, storage_options: Dict):
         columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"}
     )
 
-    # Round the result to one decimal place
-    total["HIGH_LINE_COUNT"] = total["HIGH_LINE_COUNT"].astype(float).round(1)
-    total["LOW_LINE_COUNT"] = total["LOW_LINE_COUNT"].astype(float).round(1)
+    # Round the result to one decimal place -- If you use test_result.py to test the results, please uncomment the following two lines.
+    # total["HIGH_LINE_COUNT"] = total["HIGH_LINE_COUNT"].astype(float).round(1)
+    # total["LOW_LINE_COUNT"] = total["LOW_LINE_COUNT"].astype(float).round(1)
 
 
     return total
