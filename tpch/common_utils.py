@@ -38,6 +38,9 @@ def print_result_fn(solution: str, result: pd.DataFrame, query: str):
     if not os.path.exists(result_prefix):
         os.makedirs(result_prefix)
     result_path = f"{result_prefix}/{query}.out"
+    if(solution == "polars"):
+        result.write_csv(result_path)
+        return
     result.to_csv(result_path, index=False)
 
 

@@ -137,9 +137,9 @@ def q02(root: str):
     part = load_part(root)
     partsupp = load_partsupp(root)
 
-    SIZE = 15
-    TYPE = "BRASS"
-    REGION = "EUROPE"
+    size = 15
+    type = "BRASS"
+    region_name = "EUROPE"
     total = duckdb.sql(
         f"""SELECT
                 S_ACCTBAL,
@@ -159,11 +159,11 @@ def q02(root: str):
             WHERE
                 P_PARTKEY = PS_PARTKEY
                 AND S_SUPPKEY = PS_SUPPKEY
-                AND P_SIZE = {SIZE}
-                AND P_TYPE LIKE '%{TYPE}'
+                AND P_SIZE = {size}
+                AND P_TYPE LIKE '%{type}'
                 AND S_NATIONKEY = N_NATIONKEY
                 AND N_REGIONKEY = R_REGIONKEY
-                AND R_NAME = '{REGION}'
+                AND R_NAME = '{region_name}'
                 AND PS_SUPPLYCOST = (
                     SELECT
                     MIN(PS_SUPPLYCOST)
@@ -175,13 +175,14 @@ def q02(root: str):
                     AND S_SUPPKEY = PS_SUPPKEY
                     AND S_NATIONKEY = N_NATIONKEY
                     AND N_REGIONKEY = R_REGIONKEY
-                    AND R_NAME = '{REGION}'
+                    AND R_NAME = '{region_name}'
                     )
             ORDER BY
                 S_ACCTBAL DESC,
                 N_NAME,
                 S_NAME,
-                P_PARTKEY"""
+                P_PARTKEY
+            LIMIT 100"""
     )
 
     return total
@@ -192,8 +193,8 @@ def q03(root: str):
     customer = load_customer(root)
     orders = load_orders(root)
 
-    MKTSEGMENT = "HOUSEHOLD"
-    DATE = "1995-03-04"
+    mktsegment = "HOUSEHOLD"
+    date = "1995-03-04"
     total = duckdb.sql(
         f"""SELECT
             L_ORDERKEY,
@@ -205,11 +206,11 @@ def q03(root: str):
             orders,
             LINEITEM
         WHERE
-            C_MKTSEGMENT = '{MKTSEGMENT}'
+            C_MKTSEGMENT = '{mktsegment}'
             AND C_CUSTKEY = O_CUSTKEY
             AND L_ORDERKEY = O_ORDERKEY
-            AND O_ORDERDATE < DATE '{DATE}'
-            AND L_SHIPDATE > DATE '{DATE}'
+            AND O_ORDERDATE < DATE '{date}'
+            AND L_SHIPDATE > DATE '{date}'
         GROUP BY
             L_ORDERKEY,
             O_ORDERDATE,
@@ -226,7 +227,7 @@ def q04(root: str):
     line_item = load_lineitem(root)
     orders = load_orders(root)
 
-    DATE = "1993-08-01"
+    date = "1993-08-01"
     total = duckdb.sql(
         f"""SELECT
                 O_ORDERPRIORITY,
@@ -234,8 +235,8 @@ def q04(root: str):
             FROM
                 orders
             WHERE
-                O_ORDERDATE >= DATE '{DATE}'
-                AND O_ORDERDATE < DATE '{DATE}' + INTERVAL '3' MONTH
+                O_ORDERDATE >= DATE '{date}'
+                AND O_ORDERDATE < DATE '{date}' + INTERVAL '3' MONTH
                 AND EXISTS (
                     SELECT
                         *
@@ -262,8 +263,8 @@ def q05(root: str):
     lineitem = load_lineitem(root)
     customer = load_customer(root)
 
-    REGION = "ASIA"
-    DATE = "1996-01-01"
+    region_name = "ASIA"
+    date = "1996-01-01"
     total = duckdb.sql(
         f"""SELECT
                 N_NAME,
@@ -282,9 +283,9 @@ def q05(root: str):
                 AND C_NATIONKEY = S_NATIONKEY
                 AND S_NATIONKEY = N_NATIONKEY
                 AND N_REGIONKEY = R_REGIONKEY
-                AND R_NAME = '{REGION}'
-                AND O_ORDERDATE >= DATE '{DATE}'
-                AND O_ORDERDATE < DATE '{DATE}' + INTERVAL '1' YEAR
+                AND R_NAME = '{region_name}'
+                AND O_ORDERDATE >= DATE '{date}'
+                AND O_ORDERDATE < DATE '{date}' + INTERVAL '1' YEAR
             GROUP BY
                 N_NAME
             ORDER BY
@@ -296,15 +297,15 @@ def q05(root: str):
 def q06(root: str):
     lineitem = load_lineitem(root)
 
-    DATE = "1996-01-01"
+    date = "1996-01-01"
     total = duckdb.sql(
         f"""SELECT
                 SUM(L_EXTENDEDPRICE * L_DISCOUNT) AS REVENUE
             FROM
                 LINEITEM
             WHERE
-                L_SHIPDATE >= DATE '{DATE}'
-                AND L_SHIPDATE < DATE '{DATE}' + INTERVAL '1' YEAR
+                L_SHIPDATE >= DATE '{date}'
+                AND L_SHIPDATE < DATE '{date}' + INTERVAL '1' YEAR
                 AND L_DISCOUNT BETWEEN .08 AND .1
                 AND L_QUANTITY < 24"""
     )
@@ -318,8 +319,8 @@ def q07(root: str):
     lineitem = load_lineitem(root)
     customer = load_customer(root)
 
-    NATION1 = "FRANCE"
-    NATION2 = "GERMANY"
+    nation1 = "FRANCE"
+    nation2 = "GERMANY"
     total = duckdb.sql(
         f"""SELECT
                 SUPP_NATION,
@@ -345,8 +346,8 @@ def q07(root: str):
                     AND S_NATIONKEY = N1.N_NATIONKEY
                     AND C_NATIONKEY = N2.N_NATIONKEY
                     AND (
-                    (N1.N_name = '{NATION1}' AND N2.N_NAME = '{NATION2}')
-                    OR (N1.N_NAME = '{NATION2}' AND N2.N_NAME = '{NATION1}')
+                    (N1.N_name = '{nation1}' AND N2.N_NAME = '{nation2}')
+                    OR (N1.N_NAME = '{nation2}' AND N2.N_NAME = '{nation1}')
                     )
                     AND L_SHIPDATE BETWEEN DATE '1995-01-01' AND DATE '1996-12-31'
                 ) AS SHIPPING
@@ -371,14 +372,14 @@ def q08(root: str):
     lineitem = load_lineitem(root)
     customer = load_customer(root)
 
-    NATION = "BRAZIL"
-    REGION = "AMERICA"
-    TYPE = "ECONOMY ANODIZED STEEL"
+    nation_name = "BRAZIL"
+    region_name = "AMERICA"
+    type = "ECONOMY ANODIZED STEEL"
     total = duckdb.sql(
         f"""SELECT
                 O_YEAR,
                 SUM(CASE
-                    WHEN NAtion = '{NATION}'
+                    WHEN NAtion = '{nation_name}'
                     THEN VOLUME
                     ELSE 0
                 END) / SUM(VOLUME) AS MKT_SHARE
@@ -403,10 +404,10 @@ def q08(root: str):
                     AND O_CUSTKEY = C_CUSTKEY
                     AND C_NATIONKEY = N1.N_NATIONKEY
                     AND N1.N_REGIONKEY = R_REGIONKEY
-                    AND R_NAME = '{REGION}'
+                    AND R_NAME = '{region_name}'
                     AND S_NATIONKEY = N2.N_NATIONKEY
                     AND O_ORDERDATE BETWEEN DATE '1995-01-01' AND DATE '1996-12-31'
-                    AND P_TYPE = '{TYPE}'
+                    AND P_TYPE = '{type}'
                 ) AS ALL_NATIONS
             GROUP BY
                 O_YEAR
@@ -425,7 +426,7 @@ def q09(root: str):
     lineitem = load_lineitem(root)
     partsupp = load_partsupp(root)
 
-    NAME = "ghost"
+    name = "ghost"
 
     total = duckdb.sql(
         f"""SELECT
@@ -452,7 +453,7 @@ def q09(root: str):
                         AND P_PARTKEY = L_PARTKEY
                         AND O_ORDERKEY = L_ORDERKEY
                         AND S_NATIONKEY = N_NATIONKEY
-                        AND P_NAME LIKE '%{NAME}%'
+                        AND P_NAME LIKE '%{name}%'
                 ) AS PROFIT
             GROUP BY
                 NATION,
@@ -470,7 +471,7 @@ def q10(root: str):
     lineitem = load_lineitem(root)
     customer = load_customer(root)
 
-    DATE = "1994-11-01"
+    date = "1994-11-01"
     total = duckdb.sql(
         f"""SELECT
                 C_CUSTKEY,
@@ -489,8 +490,8 @@ def q10(root: str):
             WHERE
                 C_CUSTKEY = O_CUSTKEY
                 AND L_ORDERKEY = O_ORDERKEY
-                AND O_ORDERDATE >= DATE '{DATE}'
-                AND O_ORDERDATE < DATE '{DATE}' + INTERVAL '3' MONTH
+                AND O_ORDERDATE >= DATE '{date}'
+                AND O_ORDERDATE < DATE '{date}' + INTERVAL '3' MONTH
                 AND L_RETURNFLAG = 'R'
                 AND C_NATIONKEY = N_NATIONKEY
             GROUP BY
@@ -508,14 +509,14 @@ def q10(root: str):
     return total
 
 
-# todo: result is empty
+
 def q11(root: str):
     partsupp = load_partsupp(root)
     supplier = load_supplier(root)
     nation = load_nation(root)
 
-    NATION = "GERMANY"
-    FRACTION = 0.0001
+    nation_name = "GERMANY"
+    fraction = 0.0001
 
     total = duckdb.sql(
         f"""SELECT
@@ -528,12 +529,12 @@ def q11(root: str):
             WHERE
                 PS_SUPPKEY = S_SUPPKEY
                 AND S_NATIONKEY = N_NATIONKEY
-                AND N_NAME = '{NATION}'
+                AND N_NAME = '{nation_name}'
             GROUP BY
                 PS_PARTKEY HAVING
                         SUM(PS_SUPPLYCOST * PS_AVAILQTY) > (
                     SELECT
-                        SUM(PS_SUPPLYCOST * PS_AVAILQTY) * {FRACTION}
+                        SUM(PS_SUPPLYCOST * PS_AVAILQTY) * {fraction}
                     FROM
                         PARTSUPP,
                         SUPPLIER,
@@ -541,7 +542,7 @@ def q11(root: str):
                     WHERE
                         PS_SUPPKEY = S_SUPPKEY
                         AND S_NATIONKEY = N_NATIONKEY
-                        AND N_NAME = '{NATION}'
+                        AND N_NAME = '{nation_name}'
                     )
                 ORDER BY
                     VALUE DESC"""
@@ -554,9 +555,9 @@ def q12(root):
     lineitem = load_lineitem(root)
     orders = load_orders(root)
 
-    SHIPMODE1 = "MAIL"
-    SHIPMODE2 = "SHIP"
-    DATE = "1994-01-01"
+    shipmode1 = "MAIL"
+    shipmode2 = "SHIP"
+    date = "1994-01-01"
     total = duckdb.sql(
         f"""SELECT
                 L_SHIPMODE,
@@ -577,11 +578,11 @@ def q12(root):
                 LINEITEM
             WHERE
                 O_ORDERKEY = L_ORDERKEY
-                AND L_SHIPMODE IN ('{SHIPMODE1}', '{SHIPMODE2}')
+                AND L_SHIPMODE IN ('{shipmode1}', '{shipmode2}')
                 AND L_COMMITDATE < L_RECEIPTDATE
                 AND L_SHIPDATE < L_COMMITDATE
-                AND L_RECEIPTDATE >= DATE '{DATE}'
-                AND L_RECEIPTDATE < DATE '{DATE}' + INTERVAL '1' YEAR
+                AND L_RECEIPTDATE >= DATE '{date}'
+                AND L_RECEIPTDATE < DATE '{date}' + INTERVAL '1' YEAR
             GROUP BY
                 L_SHIPMODE
             ORDER BY
@@ -595,8 +596,8 @@ def q13(root: str):
     customer = load_customer(root)
     orders = load_orders(root)
 
-    WORD1 = "special"
-    WORD2 = "requests"
+    word1 = "special"
+    word2 = "requests"
     total = duckdb.sql(
         f"""SELECT
                 C_COUNT, COUNT(*) AS CUSTDIST
@@ -607,7 +608,7 @@ def q13(root: str):
                 FROM
                     CUSTOMER LEFT OUTER JOIN orders ON
                     C_CUSTKEY = O_CUSTKEY
-                    AND O_COMMENT NOT LIKE '%{WORD1}%{WORD2}%'
+                    AND O_COMMENT NOT LIKE '%{word1}%{word2}%'
                 GROUP BY
                     C_CUSTKEY
                 )AS C_orders (C_CUSTKEY, C_COUNT)
@@ -624,7 +625,7 @@ def q14(root):
     lineitem = load_lineitem(root)
     part = load_part(root)
 
-    DATE = "1994-03-01"
+    date = "1994-03-01"
     total = duckdb.sql(
         f"""SELECT
                 100.00 * SUM(CASE
@@ -637,8 +638,8 @@ def q14(root):
                 PART
             WHERE
                 L_PARTKEY = P_PARTKEY
-                AND L_SHIPDATE >= DATE '{DATE}'
-                AND L_SHIPDATE < DATE '{DATE}' + INTERVAL '1' MONTH"""
+                AND L_SHIPDATE >= DATE '{date}'
+                AND L_SHIPDATE < DATE '{date}' + INTERVAL '1' MONTH"""
     )
     return total
 
@@ -647,7 +648,7 @@ def q15(root):
     lineitem = load_lineitem(root)
     supplier = load_supplier(root)
 
-    DATE = "1996-01-01"
+    date = "1996-01-01"
     _ = duckdb.execute(
         f"""CREATE TEMP VIEW REVENUE (SUPPLIER_NO, TOTAL_REVENUE) AS
                 SELECT
@@ -656,8 +657,8 @@ def q15(root):
                 FROM
                     LINEITEM
                 WHERE
-                    L_SHIPDATE >= DATE '{DATE}'
-                    AND L_SHIPDATE < DATE '{DATE}' + INTERVAL '3' MONTH
+                    L_SHIPDATE >= DATE '{date}'
+                    AND L_SHIPDATE < DATE '{date}' + INTERVAL '3' MONTH
                 GROUP BY
                     L_SUPPKEY"""
     )
@@ -693,16 +694,16 @@ def q16(root):
     partsupp = load_partsupp(root)
     supplier = load_supplier(root)
 
-    BRAND = "Brand#45"
-    TYPE = "MEDIUM POLISHED"
-    SIZE1 = 49
-    SIZE2 = 14
-    SIZE3 = 23
-    SIZE4 = 45
-    SIZE5 = 19
-    SIZE6 = 3
-    SIZE7 = 36
-    SIZE8 = 9
+    brand = "Brand#45"
+    type = "MEDIUM POLISHED"
+    size1 = 49
+    size2 = 14
+    size3 = 23
+    size4 = 45
+    size5 = 19
+    size6 = 3
+    size7 = 36
+    size8 = 9
     total = duckdb.sql(
         f"""SELECT
                 P_BRAND,
@@ -714,9 +715,9 @@ def q16(root):
                 PART
             WHERE
                 P_PARTKEY = PS_PARTKEY
-                AND P_BRAND <> '{BRAND}'
-                AND P_TYPE NOT LIKE '{TYPE}%'
-                AND P_SIZE IN ({SIZE1}, {SIZE2}, {SIZE3}, {SIZE4}, {SIZE5}, {SIZE6}, {SIZE7}, {SIZE8})
+                AND P_BRAND <> '{brand}'
+                AND P_TYPE NOT LIKE '{type}%'
+                AND P_SIZE IN ({size1}, {size2}, {size3}, {size4}, {size5}, {size6}, {size7}, {size8})
                 AND PS_SUPPKEY NOT IN (
                     SELECT
                         S_SUPPKEY
@@ -742,8 +743,8 @@ def q17(root):
     lineitem = load_lineitem(root)
     part = load_part(root)
 
-    BRAND = "Brand#23"
-    CONTAINER = "MED BOX"
+    brand = "Brand#23"
+    container = "MED BOX"
     total = duckdb.sql(
         f"""SELECT
                 SUM(L_EXTENDEDPRICE) / 7.0 AS AVG_YEARLY
@@ -752,8 +753,8 @@ def q17(root):
                 PART
             WHERE
                 P_PARTKEY = L_PARTKEY
-                AND P_BRAND = '{BRAND}'
-                AND P_CONTAINER = '{CONTAINER}'
+                AND P_BRAND = '{brand}'
+                AND P_CONTAINER = '{container}'
                 AND L_QUANTITY < (
                     SELECT
                         0.2 * AVG(L_QUANTITY)
@@ -771,7 +772,7 @@ def q18(root):
     orders = load_orders(root)
     customer = load_customer(root)
 
-    QUANTITY = 300
+    quantity = 300
     total = duckdb.sql(
         f"""SELECT
                 C_NAME,
@@ -792,7 +793,7 @@ def q18(root):
                         LINEITEM
                     GROUP BY
                         L_ORDERKEY HAVING
-                            SUM(L_QUANTITY) > {QUANTITY}
+                            SUM(L_QUANTITY) > {quantity}
                 )
                 AND C_CUSTKEY = O_CUSTKEY
                 AND O_ORDERKEY = L_ORDERKEY
@@ -814,8 +815,10 @@ def q19(root):
     lineitem = load_lineitem(root)
     part = load_part(root)
 
-    BRAND = "Brand#31"
-    QUANTITY = 4
+    brand1 = "Brand#31"
+    brand2 = "Brand#24"
+    brand3 = "Brand#35"
+    quantity = 4
     total = duckdb.sql(
         f"""SELECT
                 SUM(L_EXTENDEDPRICE* (1 - L_DISCOUNT)) AS REVENUE
@@ -825,9 +828,9 @@ def q19(root):
             WHERE
                 (
                     P_PARTKEY = L_PARTKEY
-                    AND P_BRAND = '{BRAND}'
+                    AND P_BRAND = '{brand1}'
                     AND P_CONTAINER IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
-                    AND L_QUANTITY >= {QUANTITY} AND L_QUANTITY <= {QUANTITY} + 10
+                    AND L_QUANTITY >= {quantity} AND L_QUANTITY <= {quantity} + 10
                     AND P_SIZE BETWEEN 1 AND 5
                     AND L_SHIPMODE IN ('AIR', 'AIR REG')
                     AND L_SHIPINSTRUCT = 'DELIVER IN PERSON'
@@ -835,7 +838,7 @@ def q19(root):
                 OR
                 (
                     P_PARTKEY = L_PARTKEY
-                    AND P_BRAND = 'BRAND#43'
+                    AND P_BRAND = '{brand2}'
                     AND P_CONTAINER IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
                     AND L_QUANTITY >= 15 AND L_QUANTITY <= 25
                     AND P_SIZE BETWEEN 1 AND 10
@@ -845,7 +848,7 @@ def q19(root):
                 OR
                 (
                     P_PARTKEY = L_PARTKEY
-                    AND P_BRAND = 'BRAND#43'
+                    AND P_BRAND = '{brand3}'
                     AND P_CONTAINER IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
                     AND L_QUANTITY >= 26 AND L_QUANTITY <= 36
                     AND P_SIZE BETWEEN 1 AND 15
@@ -864,8 +867,8 @@ def q20(root):
     partsupp = load_partsupp(root)
     supplier = load_supplier(root)
 
-    NAME = "azure"
-    DATE = "1996-01-01"
+    name = "azure"
+    date = "1996-01-01"
     total = duckdb.sql(
         f"""SELECT
                 S_NAME,
@@ -886,7 +889,7 @@ def q20(root):
                             FROM
                                 PART
                             WHERE
-                                P_NAME LIKE '{NAME}%'
+                                P_NAME LIKE '{name}%'
                         )
                         AND PS_AVAILQTY > (
                             SELECT
@@ -896,8 +899,8 @@ def q20(root):
                             WHERE
                                 L_PARTKEY = PS_PARTKEY
                                 AND L_SUPPKEY = PS_SUPPKEY
-                                AND L_SHIPDATE >= DATE '{DATE}'
-                                AND L_SHIPDATE < DATE '{DATE}' + INTERVAL '1' YEAR
+                                AND L_SHIPDATE >= DATE '{date}'
+                                AND L_SHIPDATE < DATE '{date}' + INTERVAL '1' YEAR
                         )
                 )
                 AND S_NATIONKEY = N_NATIONKEY
@@ -915,7 +918,7 @@ def q21(root):
     nation = load_nation(root)
     supplier = load_supplier(root)
 
-    NATION = "SAUDI ARABIA"
+    nation_name = "SAUDI ARABIA"
     total = duckdb.sql(
         f"""SELECT
                 S_NAME,
@@ -950,12 +953,13 @@ def q21(root):
                         AND L3.L_RECEIPTDATE > L3.L_COMMITDATE
                 )
                 AND S_NATIONKEY = N_NATIONKEY
-                AND N_NAME = '{NATION}'
+                AND N_NAME = '{nation_name}'
             GROUP BY
                 S_NAME
             ORDER BY
                 NUMWAIT DESC,
-                S_NAME"""
+                S_NAME
+            LIMIT 100"""
     )
     return total
 
