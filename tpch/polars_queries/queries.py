@@ -100,10 +100,11 @@ def load_partsupp_lazy(root: str, storage_options: Dict):
 
 
 def q01(root: str, storage_options: Dict):
-    var_1 = datetime(1998, 9, 2)
     lineitem = load_lineitem_lazy(root, storage_options)
+
+    date = datetime(1998, 9, 2)
     q_final = (
-        lineitem.filter(pl.col("L_SHIPDATE") <= var_1)
+        lineitem.filter(pl.col("L_SHIPDATE") <= date)
         .group_by(["L_RETURNFLAG", "L_LINESTATUS"])
         .agg(
             [
@@ -132,24 +133,24 @@ def q01(root: str, storage_options: Dict):
 
 
 def q02(root: str, storage_options: Dict):
-    var_1 = 15
-    var_2 = "BRASS"
-    var_3 = "EUROPE"
-
     part_ds = load_part_lazy(root, storage_options)
     partsupp_ds = load_partsupp_lazy(root, storage_options)
     supplier_ds = load_supplier_lazy(root, storage_options)
     nation_ds = load_nation_lazy(root, storage_options)
     region_ds = load_region_lazy(root, storage_options)
 
+    size = 15
+    p_type = "BRASS"
+    region_name = "EUROPE"
+
     result_q1 = (
         part_ds.join(partsupp_ds, left_on="P_PARTKEY", right_on="PS_PARTKEY")
         .join(supplier_ds, left_on="PS_SUPPKEY", right_on="S_SUPPKEY")
         .join(nation_ds, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
         .join(region_ds, left_on="N_REGIONKEY", right_on="R_REGIONKEY")
-        .filter(pl.col("P_SIZE") == var_1)
-        .filter(pl.col("P_TYPE").str.ends_with(var_2))
-        .filter(pl.col("R_NAME") == var_3)
+        .filter(pl.col("P_SIZE") == size)
+        .filter(pl.col("P_TYPE").str.ends_with(p_type))
+        .filter(pl.col("R_NAME") == region_name)
     ).cache()
 
     final_cols = [
@@ -176,25 +177,25 @@ def q02(root: str, storage_options: Dict):
             by=["S_ACCTBAL", "N_NAME", "S_NAME", "P_PARTKEY"],
             descending=[True, False, False, False],
         )
-        .with_columns(pl.col(pl.datatypes.Utf8).str.strip_chars().name.keep())
+        .with_columns(pl.col(pl.datatypes.Utf8).str.strip_chars().name.keep()).limit(100)
     )
 
     return q_final
 
 
 def q03(root: str, storage_options: Dict):
-    var_1 = var_2 = datetime(1995, 3, 4)
-    var_3 = "HOUSEHOLD"
+    date = datetime(1995, 3, 4)
+    mktsegment = "HOUSEHOLD"
 
     customer_ds = load_customer_lazy(root, storage_options)
     line_item_ds = load_lineitem_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options)
     q_final = (
-        customer_ds.filter(pl.col("C_MKTSEGMENT") == var_3)
+        customer_ds.filter(pl.col("C_MKTSEGMENT") == mktsegment)
         .join(orders_ds, left_on="C_CUSTKEY", right_on="O_CUSTKEY")
         .join(line_item_ds, left_on="O_ORDERKEY", right_on="L_ORDERKEY")
-        .filter(pl.col("O_ORDERDATE") < var_2)
-        .filter(pl.col("L_SHIPDATE") > var_1)
+        .filter(pl.col("O_ORDERDATE") < date)
+        .filter(pl.col("L_SHIPDATE") > date)
         .with_columns(
             (pl.col("L_EXTENDEDPRICE") * (1 - pl.col("L_DISCOUNT"))).alias("REVENUE")
         )
@@ -215,15 +216,15 @@ def q03(root: str, storage_options: Dict):
 
 
 def q04(root: str, storage_options: Dict):
-    var_1 = datetime(1993, 8, 1)
-    var_2 = datetime(1993, 11, 1)
+    date1 = datetime(1993, 8, 1)
+    date2 = datetime(1993, 11, 1)
 
     line_item_ds = load_lineitem_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options)
 
     q_final = (
         line_item_ds.join(orders_ds, left_on="L_ORDERKEY", right_on="O_ORDERKEY")
-        .filter(pl.col("O_ORDERDATE").is_between(var_1, var_2, closed="left"))
+        .filter(pl.col("O_ORDERDATE").is_between(date1, date2, closed="left"))
         .filter(pl.col("L_COMMITDATE") < pl.col("L_RECEIPTDATE"))
         .unique(subset=["O_ORDERPRIORITY", "L_ORDERKEY"])
         .group_by("O_ORDERPRIORITY")
@@ -236,9 +237,9 @@ def q04(root: str, storage_options: Dict):
 
 
 def q05(root: str, storage_options: Dict):
-    var_1 = "ASIA"
-    var_2 = datetime(1996, 1, 1)
-    var_3 = datetime(1997, 1, 1)
+    region_name = "ASIA"
+    date1 = datetime(1996, 1, 1)
+    date2 = datetime(1997, 1, 1)
 
     region_ds = load_region_lazy(root, storage_options)
     nation_ds = load_nation_lazy(root, storage_options)
@@ -257,8 +258,8 @@ def q05(root: str, storage_options: Dict):
             left_on=["L_SUPPKEY", "N_NATIONKEY"],
             right_on=["S_SUPPKEY", "S_NATIONKEY"],
         )
-        .filter(pl.col("R_NAME") == var_1)
-        .filter(pl.col("O_ORDERDATE").is_between(var_2, var_3, closed="left"))
+        .filter(pl.col("R_NAME") == region_name)
+        .filter(pl.col("O_ORDERDATE").is_between(date1, date2, closed="left"))
         .with_columns(
             (pl.col("L_EXTENDEDPRICE") * (1 - pl.col("L_DISCOUNT"))).alias("REVENUE")
         )
@@ -271,18 +272,18 @@ def q05(root: str, storage_options: Dict):
 
 
 def q06(root: str, storage_options: Dict):
-    var_1 = datetime(1996, 1, 1)
-    var_2 = datetime(1997, 1, 1)
-    var_3 = 24
+    date1 = datetime(1996, 1, 1)
+    date2 = datetime(1997, 1, 1)
+    quantity = 24
 
     line_item_ds = load_lineitem_lazy(root, storage_options)
 
     q_final = (
         line_item_ds.filter(
-            pl.col("L_SHIPDATE").is_between(var_1, var_2, closed="left")
+            pl.col("L_SHIPDATE").is_between(date1, date2, closed="left")
         )
         .filter(pl.col("L_DISCOUNT").is_between(0.08, 1.00))
-        .filter(pl.col("L_QUANTITY") < var_3)
+        .filter(pl.col("L_QUANTITY") < quantity)
         .with_columns(
             (pl.col("L_EXTENDEDPRICE") * pl.col("L_DISCOUNT")).alias("REVENUE")
         )
@@ -301,8 +302,8 @@ def q07(root: str, storage_options: Dict):
     n1 = nation_ds.filter(pl.col("N_NAME") == "FRANCE")
     n2 = nation_ds.filter(pl.col("N_NAME") == "GERMANY")
 
-    var_1 = datetime(1995, 1, 1)
-    var_2 = datetime(1996, 12, 31)
+    date1 = datetime(1995, 1, 1)
+    date2 = datetime(1996, 12, 31)
 
     df1 = (
         customer_ds.join(n1, left_on="C_NATIONKEY", right_on="N_NATIONKEY")
@@ -326,7 +327,7 @@ def q07(root: str, storage_options: Dict):
 
     q_final = (
         pl.concat([df1, df2])
-        .filter(pl.col("L_SHIPDATE").is_between(var_1, var_2))
+        .filter(pl.col("L_SHIPDATE").is_between(date1, date2))
         .with_columns(
             (pl.col("L_EXTENDEDPRICE") * (1 - pl.col("L_DISCOUNT"))).alias("VOLUME")
         )
@@ -339,9 +340,9 @@ def q07(root: str, storage_options: Dict):
 
 
 def q08(root: str, storage_options: Dict):
-    NATION = "BRAZIL"
-    REGION = "AMERICA"
-    TYPE = "ECONOMY ANODIZED STEEL"
+    nation_name = "BRAZIL"
+    region_name = "AMERICA"
+    p_type = "ECONOMY ANODIZED STEEL"
     date_begin = datetime(1995,1,1)
     date_end = datetime(1996,12,31)
 
@@ -363,14 +364,14 @@ def q08(root: str, storage_options: Dict):
         .join(customer_ds, left_on="O_CUSTKEY", right_on="C_CUSTKEY")
         .join(n1, left_on="C_NATIONKEY", right_on="N_NATIONKEY")
         .join(region_ds, left_on="N_REGIONKEY", right_on="R_REGIONKEY")
-        .filter(pl.col("R_NAME") == REGION)
+        .filter(pl.col("R_NAME") == region_name)
         .join(n2, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
         .filter(
             pl.col("O_ORDERDATE").is_between(
                 date_begin, date_end
             )
         )
-        .filter(pl.col("P_TYPE") == TYPE)
+        .filter(pl.col("P_TYPE") == p_type)
         .select(
             [
                 pl.col("O_ORDERDATE").dt.year().alias("O_YEAR"),
@@ -381,7 +382,7 @@ def q08(root: str, storage_options: Dict):
             ]
         )
         .with_columns(
-            pl.when(pl.col("NATION") == NATION)
+            pl.when(pl.col("NATION") == nation_name)
             .then(pl.col("VOLUME"))
             .otherwise(0)
             .alias("_tmp")
@@ -394,7 +395,7 @@ def q08(root: str, storage_options: Dict):
 
 
 def q09(root: str, storage_options: Dict):
-    NAME = "ghost"
+    p_name = "ghost"
 
     part_ds = load_part_lazy(root, storage_options)
     supplier_ds = load_supplier_lazy(root, storage_options)
@@ -413,7 +414,7 @@ def q09(root: str, storage_options: Dict):
         .join(part_ds, left_on="L_PARTKEY", right_on="P_PARTKEY")
         .join(orders_ds, left_on="L_ORDERKEY", right_on="O_ORDERKEY")
         .join(nation_ds, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
-        .filter(pl.col("P_NAME").str.contains(NAME))
+        .filter(pl.col("P_NAME").str.contains(p_name))
         .select(
             [
                 pl.col("N_NAME").alias("NATION"),
@@ -437,14 +438,14 @@ def q10(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     nation_ds = load_nation_lazy(root, storage_options)
 
-    var_1 = datetime(1994, 11, 1)
-    var_2 = datetime(1995, 2, 1)
+    date1 = datetime(1994, 11, 1)
+    date2 = datetime(1995, 2, 1)
 
     q_final = (
         customer_ds.join(orders_ds, left_on="C_CUSTKEY", right_on="O_CUSTKEY")
         .join(line_item_ds, left_on="O_ORDERKEY", right_on="L_ORDERKEY")
         .join(nation_ds, left_on="C_NATIONKEY", right_on="N_NATIONKEY")
-        .filter(pl.col("O_ORDERDATE").is_between(var_1, var_2, closed="left"))
+        .filter(pl.col("O_ORDERDATE").is_between(date1, date2, closed="left"))
         .filter(pl.col("L_RETURNFLAG") == "R")
         .group_by(
             [
@@ -491,17 +492,17 @@ def q11(root: str, storage_options: Dict):
     part_supp_ds = load_partsupp_lazy(root, storage_options)
     nation_ds = load_nation_lazy(root, storage_options)
 
-    var_1 = "GERMANY"
-    var_2 = 0.0001
+    nation_name = "GERMANY"
+    fraction = 0.0001
 
     res_1 = (
         part_supp_ds.join(supplier_ds, left_on="PS_SUPPKEY", right_on="S_SUPPKEY")
         .join(nation_ds, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
-        .filter(pl.col("N_NAME") == var_1)
+        .filter(pl.col("N_NAME") == nation_name)
     )
     res_2 = res_1.select(
         (pl.col("PS_SUPPLYCOST") * pl.col("PS_AVAILQTY")).sum().round(2).alias("TMP")
-        * var_2
+        * fraction
     ).with_columns(pl.lit(1).alias("LIT"))
 
     q_final = (
@@ -524,17 +525,17 @@ def q12(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options)
 
-    var_1 = "MAIL"
-    var_2 = "SHIP"
-    var_3 = datetime(1994, 1, 1)
-    var_4 = datetime(1995, 1, 1)
+    shipmode1 = "MAIL"
+    shipmode2 = "SHIP"
+    date1 = datetime(1994, 1, 1)
+    date2 = datetime(1995, 1, 1)
 
     q_final = (
         orders_ds.join(line_item_ds, left_on="O_ORDERKEY", right_on="L_ORDERKEY")
-        .filter(pl.col("L_SHIPMODE").is_in([var_1, var_2]))
+        .filter(pl.col("L_SHIPMODE").is_in([shipmode1, shipmode2]))
         .filter(pl.col("L_COMMITDATE") < pl.col("L_RECEIPTDATE"))
         .filter(pl.col("L_SHIPDATE") < pl.col("L_COMMITDATE"))
-        .filter(pl.col("L_RECEIPTDATE").is_between(var_3, var_4, closed="left"))
+        .filter(pl.col("L_RECEIPTDATE").is_between(date1, date2, closed="left"))
         .with_columns(
             [
                 pl.when(pl.col("O_ORDERPRIORITY").is_in(["1-URGENT", "2-HIGH"]))
@@ -556,12 +557,12 @@ def q12(root: str, storage_options: Dict):
 
 
 def q13(root: str, storage_options: Dict):
-    var_1 = "special"
-    var_2 = "requests"
+    word1 = "special"
+    word2 = "requests"
 
     customer_ds = load_customer_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options).filter(
-        pl.col("O_COMMENT").str.contains(f"{var_1}.*{var_2}").not_()
+        pl.col("O_COMMENT").str.contains(f"{word1}.*{word2}").not_()
     )
     q_final = (
         customer_ds.join(
@@ -591,12 +592,12 @@ def q14(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
 
-    var_1 = datetime(1994, 3, 1)
-    var_2 = datetime(1994, 4, 1)
+    startDate = datetime(1994, 3, 1)
+    endDate = datetime(1994, 4, 1)
 
     q_final = (
         line_item_ds.join(part_ds, left_on="L_PARTKEY", right_on="P_PARTKEY")
-        .filter(pl.col("L_SHIPDATE").is_between(var_1, var_2, closed="left"))
+        .filter(pl.col("L_SHIPDATE").is_between(startDate, endDate, closed="left"))
         .select(
             (
                 100.00
@@ -616,12 +617,12 @@ def q15(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     supplier_ds = load_supplier_lazy(root, storage_options)
 
-    var_1 = datetime(1996, 1, 1)
-    var_2 = datetime(1996, 4, 1)
+    date1 = datetime(1996, 1, 1)
+    date2 = datetime(1996, 4, 1)
 
     revenue_ds = (
         line_item_ds.filter(
-            pl.col("L_SHIPDATE").is_between(var_1, var_2, closed="left")
+            pl.col("L_SHIPDATE").is_between(date1, date2, closed="left")
         )
         .group_by("L_SUPPKEY")
         .agg(
@@ -648,15 +649,15 @@ def q16(root: str, storage_options: Dict):
     part_ds = load_part_lazy(root, storage_options)
     supplier_ds = load_supplier_lazy(root, storage_options)
 
-    BRAND = "Brand#45"
-    TYPE = "MEDIUM POLISHED"
-    SIZE_LIST = [49, 14, 23, 45, 19, 3, 36, 9]
+    brand = "Brand#45"
+    type = "MEDIUM POLISHED"
+    size_list = [49, 14, 23, 45, 19, 3, 36, 9]
 
     q_final = (
         part_ds.join(part_supp_ds, left_on="P_PARTKEY", right_on="PS_PARTKEY")
-        .filter(pl.col("P_BRAND") != BRAND)
-        .filter(pl.col("P_TYPE").str.contains(f"^{TYPE}").not_())
-        .filter(pl.col("P_SIZE").is_in(SIZE_LIST))
+        .filter(pl.col("P_BRAND") != brand)
+        .filter(pl.col("P_TYPE").str.contains(f"^{type}").not_())
+        .filter(pl.col("P_SIZE").is_in(size_list))
         .join(
             supplier_ds.filter(
                 pl.col("S_COMMENT").str.contains(".*CUSTOMER.*COMPLAINTS.*")
@@ -678,15 +679,15 @@ def q16(root: str, storage_options: Dict):
 
 
 def q17(root: str, storage_options: Dict):
-    var_1 = "Brand#23"
-    var_2 = "MED BOX"
+    brand = "Brand#23"
+    container = "MED BOX"
 
     line_item_ds = load_lineitem_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
 
     res_1 = (
-        part_ds.filter(pl.col("P_BRAND") == var_1)
-        .filter(pl.col("P_CONTAINER") == var_2)
+        part_ds.filter(pl.col("P_BRAND") == brand)
+        .filter(pl.col("P_CONTAINER") == container)
         .join(line_item_ds, how="left", left_on="P_PARTKEY", right_on="L_PARTKEY")
     ).cache()
 
@@ -706,12 +707,12 @@ def q18(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options)
 
-    var_1 = 300
+    quantity = 300
 
     q_final = (
         line_item_ds.group_by("L_ORDERKEY")
         .agg(pl.col("L_QUANTITY").sum().alias("SUM_QUANTITY"))
-        .filter(pl.col("SUM_QUANTITY") > var_1)
+        .filter(pl.col("SUM_QUANTITY") > quantity)
         .select([pl.col("L_ORDERKEY").alias("KEY"), pl.col("SUM_QUANTITY")])
         .join(orders_ds, left_on="KEY", right_on="O_ORDERKEY")
         .join(line_item_ds, left_on="KEY", right_on="L_ORDERKEY")
@@ -738,38 +739,39 @@ def q19(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
 
-    BRAND1 = "Brand#31"
-    BRAND2 = "BRAND#43"
-    QUANTITY1 = 4
-    QUANTITY2 = 15
-    QUANTITY3 = 26
+    quantity1 = 4
+    quantity2 = 15
+    quantity3 = 26
+    brand1 = "Brand#31"
+    brand2 = "Brand#24"
+    brand3 = "Brand#35"
     q_final = (
         part_ds.join(line_item_ds, left_on="P_PARTKEY", right_on="L_PARTKEY")
         .filter(pl.col("L_SHIPMODE").is_in(["AIR", "AIR REG"]))
         .filter(pl.col("L_SHIPINSTRUCT") == "DELIVER IN PERSON")
         .filter(
             (
-                (pl.col("P_BRAND") == BRAND1)
+                (pl.col("P_BRAND") == brand1)
                 & pl.col("P_CONTAINER").is_in(
                     ["SM CASE", "SM BOX", "SM PACK", "SM PKG"]
                 )
-                & (pl.col("L_QUANTITY").is_between(QUANTITY1, QUANTITY1+10))
+                & (pl.col("L_QUANTITY").is_between(quantity1, quantity1+10))
                 & (pl.col("P_SIZE").is_between(1, 5))
             )
             | (
-                (pl.col("P_BRAND") == BRAND2)
+                (pl.col("P_BRAND") == brand2)
                 & pl.col("P_CONTAINER").is_in(
                     ["MED BAG", "MED BOX", "MED PKG", "MED PACK"]
                 )
-                & (pl.col("L_QUANTITY").is_between(QUANTITY2, QUANTITY2+10))
+                & (pl.col("L_QUANTITY").is_between(quantity2, quantity2+10))
                 & (pl.col("P_SIZE").is_between(1, 10))
             )
             | (
-                (pl.col("P_BRAND") == BRAND2)
+                (pl.col("P_BRAND") == brand3)
                 & pl.col("P_CONTAINER").is_in(
                     ["LG CASE", "LG BOX", "LG PACK", "LG PKG"]
                 )
-                & (pl.col("L_QUANTITY").is_between(QUANTITY3, QUANTITY2+10))
+                & (pl.col("L_QUANTITY").is_between(quantity3, quantity3+10))
                 & (pl.col("P_SIZE").is_between(1, 15))
             )
         )
@@ -789,23 +791,23 @@ def q20(root: str, storage_options: Dict):
     part_ds = load_part_lazy(root, storage_options)
     part_supp_ds = load_partsupp_lazy(root, storage_options)
 
-    var_1 = datetime(1996, 1, 1)
-    var_2 = datetime(1997, 1, 1)
-    var_3 = "JORDAN"
-    var_4 = "azure"
+    date1 = datetime(1996, 1, 1)
+    date2 = datetime(1997, 1, 1)
+    name = "JORDAN"
+    p_name = "azure"
 
     res_1 = (
         line_item_ds.filter(
-            pl.col("L_SHIPDATE").is_between(var_1, var_2, closed="left")
+            pl.col("L_SHIPDATE").is_between(date1, date2, closed="left")
         )
         .group_by("L_PARTKEY", "L_SUPPKEY")
         .agg((pl.col("L_QUANTITY").sum() * 0.5).alias("SUM_QUANTITY"))
     )
-    res_2 = nation_ds.filter(pl.col("N_NAME") == var_3)
+    res_2 = nation_ds.filter(pl.col("N_NAME") == name)
     res_3 = supplier_ds.join(res_2, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
 
     q_final = (
-        part_ds.filter(pl.col("P_NAME").str.starts_with(var_4))
+        part_ds.filter(pl.col("P_NAME").str.starts_with(p_name))
         .select(pl.col("P_PARTKEY").unique())
         .join(part_supp_ds, left_on="P_PARTKEY", right_on="PS_PARTKEY")
         .join(
@@ -829,7 +831,7 @@ def q21(root: str, storage_options: Dict):
     nation_ds = load_nation_lazy(root, storage_options)
     orders_ds = load_orders_lazy(root, storage_options)
 
-    var_1 = "SAUDI ARABIA"
+    nation_name = "SAUDI ARABIA"
 
     res_1 = (
         (
@@ -851,11 +853,12 @@ def q21(root: str, storage_options: Dict):
         .join(nation_ds, left_on="S_NATIONKEY", right_on="N_NATIONKEY")
         .join(orders_ds, left_on="L_ORDERKEY", right_on="O_ORDERKEY")
         .filter(pl.col("NUNIQUE_COL") == 1)
-        .filter(pl.col("N_NAME") == var_1)
+        .filter(pl.col("N_NAME") == nation_name)
         .filter(pl.col("O_ORDERSTATUS") == "F")
         .group_by("S_NAME")
         .agg(pl.len().alias("NUMWAIT"))
         .sort(by=["NUMWAIT", "S_NAME"], descending=[True, False])
+        .limit(100)
     )
     return q_final
 
