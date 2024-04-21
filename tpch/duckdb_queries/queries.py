@@ -139,7 +139,7 @@ def q02(root: str):
 
     size = 15
     type = "BRASS"
-    Region = "EUROPE" # Different from the region table, the same below.
+    region_name = "EUROPE"
     total = duckdb.sql(
         f"""SELECT
                 S_ACCTBAL,
@@ -163,7 +163,7 @@ def q02(root: str):
                 AND P_TYPE LIKE '%{type}'
                 AND S_NATIONKEY = N_NATIONKEY
                 AND N_REGIONKEY = R_REGIONKEY
-                AND R_NAME = '{Region}'
+                AND R_NAME = '{region_name}'
                 AND PS_SUPPLYCOST = (
                     SELECT
                     MIN(PS_SUPPLYCOST)
@@ -175,7 +175,7 @@ def q02(root: str):
                     AND S_SUPPKEY = PS_SUPPKEY
                     AND S_NATIONKEY = N_NATIONKEY
                     AND N_REGIONKEY = R_REGIONKEY
-                    AND R_NAME = '{Region}'
+                    AND R_NAME = '{region_name}'
                     )
             ORDER BY
                 S_ACCTBAL DESC,
@@ -263,7 +263,7 @@ def q05(root: str):
     lineitem = load_lineitem(root)
     customer = load_customer(root)
 
-    Region = "ASIA"
+    region_name = "ASIA"
     date = "1996-01-01"
     total = duckdb.sql(
         f"""SELECT
@@ -283,7 +283,7 @@ def q05(root: str):
                 AND C_NATIONKEY = S_NATIONKEY
                 AND S_NATIONKEY = N_NATIONKEY
                 AND N_REGIONKEY = R_REGIONKEY
-                AND R_NAME = '{Region}'
+                AND R_NAME = '{region_name}'
                 AND O_ORDERDATE >= DATE '{date}'
                 AND O_ORDERDATE < DATE '{date}' + INTERVAL '1' YEAR
             GROUP BY
@@ -372,14 +372,14 @@ def q08(root: str):
     lineitem = load_lineitem(root)
     customer = load_customer(root)
 
-    nation = "BRAZIL"
-    Region = "AMERICA"
+    nation_name = "BRAZIL"
+    region_name = "AMERICA"
     type = "ECONOMY ANODIZED STEEL"
     total = duckdb.sql(
         f"""SELECT
                 O_YEAR,
                 SUM(CASE
-                    WHEN NAtion = '{nation}'
+                    WHEN NAtion = '{nation_name}'
                     THEN VOLUME
                     ELSE 0
                 END) / SUM(VOLUME) AS MKT_SHARE
@@ -404,7 +404,7 @@ def q08(root: str):
                     AND O_CUSTKEY = C_CUSTKEY
                     AND C_NATIONKEY = N1.N_NATIONKEY
                     AND N1.N_REGIONKEY = R_REGIONKEY
-                    AND R_NAME = '{Region}'
+                    AND R_NAME = '{region_name}'
                     AND S_NATIONKEY = N2.N_NATIONKEY
                     AND O_ORDERDATE BETWEEN DATE '1995-01-01' AND DATE '1996-12-31'
                     AND P_TYPE = '{type}'
@@ -515,7 +515,7 @@ def q11(root: str):
     supplier = load_supplier(root)
     nation = load_nation(root)
 
-    nation = "GERMANY"
+    nation_name = "GERMANY"
     fraction = 0.0001
 
     total = duckdb.sql(
@@ -529,7 +529,7 @@ def q11(root: str):
             WHERE
                 PS_SUPPKEY = S_SUPPKEY
                 AND S_NATIONKEY = N_NATIONKEY
-                AND N_NAME = '{nation}'
+                AND N_NAME = '{nation_name}'
             GROUP BY
                 PS_PARTKEY HAVING
                         SUM(PS_SUPPLYCOST * PS_AVAILQTY) > (
@@ -542,7 +542,7 @@ def q11(root: str):
                     WHERE
                         PS_SUPPKEY = S_SUPPKEY
                         AND S_NATIONKEY = N_NATIONKEY
-                        AND N_NAME = '{nation}'
+                        AND N_NAME = '{nation_name}'
                     )
                 ORDER BY
                     VALUE DESC"""
@@ -918,7 +918,7 @@ def q21(root):
     nation = load_nation(root)
     supplier = load_supplier(root)
 
-    nation = "SAUDI ARABIA"
+    nation_name = "SAUDI ARABIA"
     total = duckdb.sql(
         f"""SELECT
                 S_NAME,
@@ -953,7 +953,7 @@ def q21(root):
                         AND L3.L_RECEIPTDATE > L3.L_COMMITDATE
                 )
                 AND S_NATIONKEY = N_NATIONKEY
-                AND N_NAME = '{nation}'
+                AND N_NAME = '{nation_name}'
             GROUP BY
                 S_NAME
             ORDER BY
