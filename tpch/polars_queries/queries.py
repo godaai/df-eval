@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Dict
 
 import polars as pl
-import sys
 
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
 
@@ -592,12 +591,12 @@ def q14(root: str, storage_options: Dict):
     line_item_ds = load_lineitem_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
 
-    startDate = datetime(1994, 3, 1)
-    endDate = datetime(1994, 4, 1)
+    date1 = datetime(1994, 3, 1)
+    date2 = datetime(1994, 4, 1)
 
     q_final = (
         line_item_ds.join(part_ds, left_on="L_PARTKEY", right_on="P_PARTKEY")
-        .filter(pl.col("L_SHIPDATE").is_between(startDate, endDate, closed="left"))
+        .filter(pl.col("L_SHIPDATE").is_between(date1, date2, closed="left"))
         .select(
             (
                 100.00
@@ -643,7 +642,6 @@ def q15(root: str, storage_options: Dict):
     return q_final
 
 
-# 大改 https://github.com/pola-rs/tpch/blob/main/queries/polars/q16.py 有问题
 def q16(root: str, storage_options: Dict):
     part_supp_ds = load_partsupp_lazy(root, storage_options)
     part_ds = load_part_lazy(root, storage_options)
