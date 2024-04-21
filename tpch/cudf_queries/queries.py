@@ -1,3 +1,4 @@
+import cudf
 import cudf.pandas
 cudf.pandas.install()
 import pandas as pd
@@ -10,9 +11,6 @@ import traceback
 from typing import Dict
 
 import sys
-# 将父目录添加到 Python 的搜索路径中
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(parent_dir)
 
 # import pandas as pd
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
@@ -278,7 +276,7 @@ def q02(root: str, storage_options: Dict):
         by=["S_ACCTBAL", "N_NAME", "S_NAME", "P_PARTKEY"],
         ascending=[False, True, True, True],
     )
-    total = total
+    total = total.head(100)
 
     return total
 
@@ -903,7 +901,8 @@ def q19(root: str, storage_options: Dict):
     quantity2 = 15
     quantity3 = 26
     brand1 = "Brand#31"
-    brand2 = "BRAND#43"
+    brand2 = "Brand#24"
+    brand3 = "Brand#35"
 
     lsel = (
         (
@@ -946,7 +945,7 @@ def q19(root: str, storage_options: Dict):
         )
         | (
             (part.P_SIZE <= 15)
-            & (part.P_BRAND == brand2)
+            & (part.P_BRAND == brand3)
             & (
                 (part.P_CONTAINER == "LG BOX")
                 | (part.P_CONTAINER == "LG CASE")
@@ -986,7 +985,7 @@ def q19(root: str, storage_options: Dict):
         )
         |
         (
-         (jn.P_BRAND == brand2)
+         (jn.P_BRAND == brand3)
         & (
             (jn.P_CONTAINER == "LG BOX")
             | (jn.P_CONTAINER == "LG CASE")
@@ -1109,7 +1108,7 @@ def q21(root: str, storage_options: Dict):
     total = total.reset_index(name='size')
     total.columns = ["S_NAME", "NUMWAIT"]
     total = total.sort_values(by=["NUMWAIT", "S_NAME"], ascending=[False, True])
-    total = total
+    total = total.head(100)
 
     return total
 
@@ -1240,7 +1239,7 @@ def run_queries(
     print_result=False,
     include_io=False,
 ):
-    version = "none"
+    version = cudf.__version__
     data_start_time = time.time()
     for query in queries:
         loaders = query_to_loaders[query]
