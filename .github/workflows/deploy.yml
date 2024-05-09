@@ -2,8 +2,8 @@ name: Deploy Docs
 
 on:
   push:
-    branches:        
-      - '*' 
+    tags:   
+      - '*'
 
 jobs:
   build:
