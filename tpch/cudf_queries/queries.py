@@ -1,7 +1,6 @@
 import cudf
 import cudf.pandas
 cudf.pandas.install()
-import pandas as pd
 
 import argparse
 import json
@@ -10,9 +9,7 @@ import time
 import traceback
 from typing import Dict
 
-import sys
-
-# import pandas as pd
+import pandas as pd
 from common_utils import log_time_fn, parse_common_arguments, print_result_fn
 
 dataset_dict = {}
@@ -128,7 +125,7 @@ def q01(root: str, storage_options: Dict):
         ],
     ]
     sel = lineitem_filtered.L_SHIPDATE <= date
-    lineitem_filtered = lineitem_filtered[sel]
+    lineitem_filtered = lineitem_filtered.loc[sel]
     lineitem_filtered["AVG_QTY"] = lineitem_filtered.L_QUANTITY
     lineitem_filtered["AVG_PRICE"] = lineitem_filtered.L_EXTENDEDPRICE
     lineitem_filtered["DISC_PRICE"] = lineitem_filtered.L_EXTENDEDPRICE * (
@@ -316,7 +313,7 @@ def q03(root: str, storage_options: Dict):
         :, ["L_ORDERKEY", "REVENUE", "O_ORDERDATE", "O_SHIPPRIORITY"]
     ]
 
-    # [change 1]Convert cudf DataFrame to Pandas DataFrame and format timestamp
+    # [DIFF] Convert cudf DataFrame to Pandas DataFrame and format timestamp
     total["O_ORDERDATE"] = pd.to_datetime(total["O_ORDERDATE"]).dt.strftime("%Y-%m-%d")
     return total
 
@@ -408,8 +405,8 @@ def q07(root: str, storage_options: Dict):
         (lineitem["L_SHIPDATE"] >= pd.Timestamp("1995-01-01"))
         & (lineitem["L_SHIPDATE"] < pd.Timestamp("1997-01-01"))
     ]
-    lineitem_filtered["L_YEAR"] = lineitem_filtered["L_SHIPDATE"].dt.year
-    lineitem_filtered["VOLUME"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
+    lineitem_filtered.loc[:, "L_YEAR"] = lineitem_filtered["L_SHIPDATE"].dt.year
+    lineitem_filtered.loc[:, "VOLUME"] = lineitem_filtered["L_EXTENDEDPRICE"] * (
         1.0 - lineitem_filtered["L_DISCOUNT"]
     )
     lineitem_filtered = lineitem_filtered.loc[
@@ -704,10 +701,10 @@ def q12(root: str, storage_options: Dict):
         columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"}
     )
 
-    # Round the result to one decimal place -- If you use test_result.py to test the results, please uncomment the following two lines.
+    # Round the result to one decimal
+    # If you use test_result.py to test the results, please uncomment the following two lines.
     # total["HIGH_LINE_COUNT"] = total["HIGH_LINE_COUNT"].astype(float).round(1)
     # total["LOW_LINE_COUNT"] = total["LOW_LINE_COUNT"].astype(float).round(1)
-
 
     return total
 
@@ -730,14 +727,11 @@ def q13(root: str, storage_options: Dict):
     count_df = c_o_merged.groupby(["C_CUSTKEY"], as_index=False).agg(
         C_COUNT=pd.NamedAgg(column="O_ORDERKEY", aggfunc="count")
     )
-
     total = count_df.groupby(["C_COUNT"], as_index=False).size()
-    # [change 3] for TypeError: Series.sort_values() got an unexpected keyword argument 'by'
-    # the error is caused here: in cuDF,DataFrameGroupBy.size() Return the size of each group. https://docs.rapids.ai/api/cudf/stable/user_guide/api_docs/api/cudf.core.groupby.groupby.dataframegroupby.size/#
-    # while in pandas, DataFrameGroupBy.size() Returns DataFrame or Series, Number of rows in each group as a Series if as_index is True or a DataFrame if as_index is False. https://pandas.pydata.org/docs/reference/api/pandas.core.groupby.DataFrameGroupBy.size.html#pandas.core.groupby.DataFrameGroupBy.size
+    
+    # [DIFF] groupby.agg is a `Series` and convert `Series` to `DataFrame`
     total = total.reset_index(name='size')
     total.columns = ["C_COUNT", "CUSTDIST"]
-
     total = total.sort_values(
         by=["CUSTDIST", "C_COUNT"],
         ascending=[False, False],
@@ -811,18 +805,18 @@ def q16(root: str, storage_options: Dict):
     partsupp = load_partsupp(root, storage_options)
     supplier = load_supplier(root, storage_options)
 
-    BRAND = "Brand#45"
-    TYPE = "MEDIUM POLISHED"
-    SIZE_LIST = [49, 14, 23, 45, 19, 3, 36, 9]
+    brand = "Brand#45"
+    p_type = "MEDIUM POLISHED"
+    size_list = [49, 14, 23, 45, 19, 3, 36, 9]
 
     # Merge part and partsupp DataFrames
     merged_df = pd.merge(part, partsupp, left_on="P_PARTKEY", right_on="PS_PARTKEY", how="inner")
 
     # Apply filters
     filtered_df = merged_df[
-        (merged_df["P_BRAND"] != BRAND) &
-        (~merged_df["P_TYPE"].str.startswith(TYPE)) &
-        (merged_df["P_SIZE"].isin(SIZE_LIST))
+        (merged_df["P_BRAND"] != brand) &
+        (~merged_df["P_TYPE"].str.startswith(p_type)) &
+        (merged_df["P_SIZE"].isin(size_list))
     ]
 
     # Exclude unwanted suppliers
@@ -887,7 +881,7 @@ def q18(root: str, storage_options: Dict):
     total = gb2.sort_values(["O_TOTALPRICE", "O_ORDERDATE"], ascending=[False, True])
     total = total.head(100)
 
-    # [change 2]Convert cudf DataFrame to Pandas DataFrame and format timestamp
+    # [DIFF] Convert cudf DataFrame to Pandas DataFrame and format timestamp
     total["O_ORDERDATE"] = pd.to_datetime(total["O_ORDERDATE"]).dt.strftime("%Y-%m-%d")
 
     return total
@@ -959,42 +953,42 @@ def q19(root: str, storage_options: Dict):
     jn = flineitem.merge(fpart, left_on="L_PARTKEY", right_on="P_PARTKEY")
     jnsel = (
         (
-        (jn.P_BRAND == brand1)
-        & (
-            (jn.P_CONTAINER == "SM BOX")
-            | (jn.P_CONTAINER == "SM CASE")
-            | (jn.P_CONTAINER == "SM PACK")
-            | (jn.P_CONTAINER == "SM PKG")
-        )
-        & (jn.L_QUANTITY >= quantity1)
-        & (jn.L_QUANTITY <= quantity1 + 10)
-        & (jn.P_SIZE <= 5)
+            (jn.P_BRAND == brand1)
+            & (
+                (jn.P_CONTAINER == "SM BOX")
+                | (jn.P_CONTAINER == "SM CASE")
+                | (jn.P_CONTAINER == "SM PACK")
+                | (jn.P_CONTAINER == "SM PKG")
+            )
+            & (jn.L_QUANTITY >= quantity1)
+            & (jn.L_QUANTITY <= quantity1 + 10)
+            & (jn.P_SIZE <= 5)
+            )
+            |
+            (
+            (jn.P_BRAND == brand2)
+            & (
+                (jn.P_CONTAINER == "MED BAG")
+                | (jn.P_CONTAINER == "MED BOX")
+                | (jn.P_CONTAINER == "MED PACK")
+                | (jn.P_CONTAINER == "MED PKG")
+            )
+            & (jn.L_QUANTITY >= quantity2)
+            & (jn.L_QUANTITY <= quantity2 + 10)
+            & (jn.P_SIZE <= 10)
         )
         |
         (
-        (jn.P_BRAND == brand2)
-        & (
-            (jn.P_CONTAINER == "MED BAG")
-            | (jn.P_CONTAINER == "MED BOX")
-            | (jn.P_CONTAINER == "MED PACK")
-            | (jn.P_CONTAINER == "MED PKG")
-        )
-        & (jn.L_QUANTITY >= quantity2)
-        & (jn.L_QUANTITY <= quantity2 + 10)
-        & (jn.P_SIZE <= 10)
-        )
-        |
-        (
-         (jn.P_BRAND == brand3)
-        & (
-            (jn.P_CONTAINER == "LG BOX")
-            | (jn.P_CONTAINER == "LG CASE")
-            | (jn.P_CONTAINER == "LG PACK")
-            | (jn.P_CONTAINER == "LG PKG")
-        )
-        & (jn.L_QUANTITY >= quantity3)
-        & (jn.L_QUANTITY <= quantity3 + 10)
-        & (jn.P_SIZE <= 15)
+            (jn.P_BRAND == brand3)
+            & (
+                (jn.P_CONTAINER == "LG BOX")
+                | (jn.P_CONTAINER == "LG CASE")
+                | (jn.P_CONTAINER == "LG PACK")
+                | (jn.P_CONTAINER == "LG PKG")
+            )
+            & (jn.L_QUANTITY >= quantity3)
+            & (jn.L_QUANTITY <= quantity3 + 10)
+            & (jn.P_SIZE <= 15)
         )
     )
     jn = jn[jnsel]
@@ -1104,7 +1098,7 @@ def q21(root: str, storage_options: Dict):
     )
     total = total.loc[:, ["S_NAME"]]
     total = total.groupby("S_NAME", as_index=False).size()
-    # [change 4] add reset_index for the same error in q13
+    # [DIFF] groupby.add `Series` to `DataFrame`
     total = total.reset_index(name='size')
     total.columns = ["S_NAME", "NUMWAIT"]
     total = total.sort_values(by=["NUMWAIT", "S_NAME"], ascending=[False, True])
@@ -1145,7 +1139,7 @@ def q22(root: str, storage_options: Dict):
     )
     customer_selected = customer_selected.loc[:, ["CNTRYCODE", "C_ACCTBAL"]]
     agg1 = customer_selected.groupby(["CNTRYCODE"], as_index=False).size()
-    # [change 5] add reset_index for the same error in q13
+    # [DIFF] groupby.add `Series` to `DataFrame`
     agg1 = agg1.reset_index(name='size')
 
     agg1.columns = ["CNTRYCODE", "NUMCUST"]
