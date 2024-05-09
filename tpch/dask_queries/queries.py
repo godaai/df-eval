@@ -1359,7 +1359,7 @@ def main():
     if args.endpoint == "local" or args.endpoint is None:
         from dask.distributed import LocalCluster
 
-        client = LocalCluster()
+        client = Client(LocalCluster())
     elif args.endpoint:
         client = Client(args.endpoint)
 

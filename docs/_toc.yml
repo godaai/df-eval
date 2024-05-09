@@ -1,0 +1,10 @@
+format: jb-book
+root: index
+parts:
+- caption: DataFrame
+  chapters:
+  - file: dataframe/dataframe
+
+- caption: Performance
+  chapters:
+  - file: perf/ad-hoc-query

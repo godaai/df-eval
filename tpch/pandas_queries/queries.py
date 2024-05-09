@@ -695,7 +695,8 @@ def q12(root: str, storage_options: Dict):
         columns={"g1": "HIGH_LINE_COUNT", "g2": "LOW_LINE_COUNT"}
     )
 
-    # Round the result to one decimal place -- If you use test_result.py to test the results, please uncomment the following two lines.
+    # Round the result to one decimal
+    # If you use test_result.py to test the results, please uncomment the following two lines.
     # total["HIGH_LINE_COUNT"] = total["HIGH_LINE_COUNT"].astype(float).round(1)
     # total["LOW_LINE_COUNT"] = total["LOW_LINE_COUNT"].astype(float).round(1)
 
@@ -796,7 +797,7 @@ def q16(root: str, storage_options: Dict):
     supplier = load_supplier(root, storage_options)
 
     brand = "Brand#45"
-    type = "MEDIUM POLISHED"
+    p_type = "MEDIUM POLISHED"
     size_list = [49, 14, 23, 45, 19, 3, 36, 9]
 
     # Merge part and partsupp DataFrames
@@ -805,7 +806,7 @@ def q16(root: str, storage_options: Dict):
     # Apply filters
     filtered_df = merged_df[
         (merged_df["P_BRAND"] != brand) &
-        (~merged_df["P_TYPE"].str.startswith(type)) &
+        (~merged_df["P_TYPE"].str.startswith(p_type)) &
         (merged_df["P_SIZE"].isin(size_list))
     ]
 
