@@ -29,6 +29,7 @@ jobs:
         python -m pip install -r requirements-doc.txt
     - name: Build website
       run: |
+        cd docs
         sphinx-build -b html ./ ./_build/html
         touch ./_build/html/.nojekyll
     # Upload the book's HTML as an artifact
