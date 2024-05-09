@@ -2,8 +2,8 @@ name: Deploy Docs
 
 on:
   push:
-    tags:        
-      - '*' 
+    tags:   
+      - '*'
 
 jobs:
   build:
@@ -36,7 +36,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v2
       with:
-        path: "_build/html"
+        path: "docs/_build/html"
 
     # Deploy the book's HTML to GitHub Pages
     - name: Deploy to GitHub Pages
